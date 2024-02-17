@@ -3,10 +3,14 @@ import {
 } from './utilities.js'
 
 export class Game {
+    static fpsInterval = 1000 / Constants.FPS
     constructor(grid) {
         this.grid = grid
         this.bag = [...Constants.pieces]
         this.nextPiece = this.getRandomPiece()
+
+        this.lastTime = Date.now();
+        this.timeElapsed = 0
     }
 
     getRandomPiece() {
@@ -14,7 +18,16 @@ export class Game {
             this.bag = [...Constants.pieces]
         }
         let idx = Math.floor(Math.random()*this.bag.length)
-        return new Piece(this.grid, this.bag.splice(idx))
+        return new Piece(this.grid, this.bag.splice(idx, 1))
+    }
+
+    tick() {
+        this.timeElapsed =  Date.now() - this.lastTime
+        if(this.timeElapsed > Game.fpsInterval){
+            this.lastTime = Date.now() - (this.timeElapsed % Game.fpsInterval)
+            return true
+        }
+        return false
     }
 }
 

@@ -59,12 +59,19 @@ export class Constants {
         't': [
             [-1, 0], [0, -1], [0, 0], [0, 1]
         ],
-        'i': [],
-        'o': []
+        'i': [[0, -1], [0, 0], [0, 1], [0, 2]],
+        'o': [[0, 0], [0, 1], [1, 0], [1, 1]]
     }
     static pieces = ['j', 'l', 's', 'z', 't', 'i', 'o']
+
+    static FPS = 60
+    
 }
 
 export function addVectors(v1, v2) {
     return v1.map((e, idx) => e + v2[idx])
+}
+
+export function getColumn(arr, idx) {
+    return arr.map(x => x[idx])
 }
