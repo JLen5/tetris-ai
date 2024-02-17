@@ -65,8 +65,14 @@ export class Constants {
     }
     static pieces = ['j', 'l', 's', 'z', 't', 'i', 'o']
 
-    static FPS = 60
+}
 
+export class Config {
+    static FPS = 60
+    static keys = {
+        'left': 'arrowleft',
+        'right': 'arrowright'
+    }
 }
 
 export function addVectors(v1, v2) {

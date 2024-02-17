@@ -1,16 +1,16 @@
 import {
-    RGB, Constants, addVectors
+    RGB, Constants, Config, addVectors
 } from './utilities.js'
 
 export class Game {
-    static fpsInterval = 1000 / Constants.FPS
+    static fpsInterval = 1000 / Config.FPS
     constructor(grid) {
         this.grid = grid
         this.bag = [...Constants.pieces]
         this.currentPiece = this.getRandomPiece()
         this.nextPiece = this.getRandomPiece()
 
-        this.fallInterval = 2 * Constants.FPS // seconds * FPS = frames
+        this.fallInterval = 2 * Config.FPS // seconds * FPS = frames
         this.fallCounter = 0
 
         this.lastTime = Date.now();
@@ -22,7 +22,6 @@ export class Game {
         if(this.timeElapsed > Game.fpsInterval){
             this.lastTime = Date.now() - (this.timeElapsed % Game.fpsInterval)
             this.fallCounter += 1
-            console.log(this.fallInterval)
             return true
         }
         return false
@@ -31,10 +30,34 @@ export class Game {
     update() {
         this.currentPiece.draw()
         if (this.fallCounter > this.fallInterval) {
-            this.currentPiece.empty()
+            // this.currentPiece.empty()
             this.currentPiece.fall()
             this.fallCounter = 0
         }
+    }
+
+    handleKeys(inputs) {
+        if (Config.keys['left'] in inputs.keys) {
+            if (inputs.keys[Config.keys['left']] <= 0) {
+                inputs.keys[Config.keys['left']] = 60
+                // this.currentPiece.offset[1] -= 1
+                this.currentPiece.shift([0, -1])
+            }
+        }
+        if (Config.keys['right'] in inputs.keys) {
+            if (inputs.keys[Config.keys['right']] <= 0) {
+                console.log('hi')
+                inputs.keys[Config.keys['right']] = 60
+                // this.currentPiece.offset[1] += 1
+                this.currentPiece.shift([0, 1])
+            }
+        }
+        // if (inputs.keys.includes(Config.keys['left'])) {
+        //     this.currentPiece.offset[1] -= 1
+        // }
+        // if (inputs.keys.includes(Config.keys['right'])) {
+        //     this.currentPiece.offset[1] += 1
+        // }
     }
 
     getRandomPiece() {
@@ -140,8 +163,14 @@ export class Piece {
         })
     }
 
+    shift (vec) {
+        this.empty()
+        this.offset = addVectors(this.offset, vec)
+    }
+
     fall() {
-        this.offset[0] += 1
+        // this.offset[0] += 1
+        this.shift([1, 0])
     }
 
 }
