@@ -41,7 +41,8 @@ export class Constants {
         'z': new RGB(255, 0, 0),
         't': new RGB(128, 0, 128),
         'i': new RGB(0, 255, 255),
-        'o': new RGB(255, 255, 0)
+        'o': new RGB(255, 255, 0),
+        'x': new RGB(0, 0, 0)
     }
     static shapes = {
         'j': [
@@ -65,7 +66,7 @@ export class Constants {
     static pieces = ['j', 'l', 's', 'z', 't', 'i', 'o']
 
     static FPS = 60
-    
+
 }
 
 export function addVectors(v1, v2) {

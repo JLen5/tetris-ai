@@ -23,8 +23,8 @@ canvas.height = grid.gridH*grid.tileW
 function gameLoop() {
     if(game.tick()) {
         ctx.clearRect(0, 0, canvas.width, canvas.height) // clear canvas
-        
-        game.nextPiece.draw()
+        game.update()
+        // game.nextPiece.draw()
         grid.update()
         grid.draw(ctx)
     }

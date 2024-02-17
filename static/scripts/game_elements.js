@@ -7,27 +7,49 @@ export class Game {
     constructor(grid) {
         this.grid = grid
         this.bag = [...Constants.pieces]
+        this.currentPiece = this.getRandomPiece()
         this.nextPiece = this.getRandomPiece()
+
+        this.fallInterval = 2 * Constants.FPS // seconds * FPS = frames
+        this.fallCounter = 0
 
         this.lastTime = Date.now();
         this.timeElapsed = 0
-    }
-
-    getRandomPiece() {
-        if (this.bag.length === 0) {
-            this.bag = [...Constants.pieces]
-        }
-        let idx = Math.floor(Math.random()*this.bag.length)
-        return new Piece(this.grid, this.bag.splice(idx, 1))
     }
 
     tick() {
         this.timeElapsed =  Date.now() - this.lastTime
         if(this.timeElapsed > Game.fpsInterval){
             this.lastTime = Date.now() - (this.timeElapsed % Game.fpsInterval)
+            this.fallCounter += 1
+            console.log(this.fallInterval)
             return true
         }
         return false
+    }
+
+    update() {
+        this.currentPiece.draw()
+        if (this.fallCounter > this.fallInterval) {
+            this.currentPiece.empty()
+            this.currentPiece.fall()
+            this.fallCounter = 0
+        }
+    }
+
+    getRandomPiece() {
+        // reset bag
+        if (this.bag.length === 0) {
+            this.bag = [...Constants.pieces]
+        }
+
+        let idx = Math.floor(Math.random()*this.bag.length)
+        return new Piece(this.grid, this.bag.splice(idx, 1))
+    }
+
+    newPiece() {
+        this.currentPiece = this.nextPiece
+        this.nextPiece = this.getRandomPiece()
     }
 }
 
@@ -73,13 +95,17 @@ export class Tile {
         this.r = r
         this.c = c
         this.w = w
-        this.colour = new RGB(0, 0, 0)
+        this.colour = Constants.colours['x']
         this.borderColour = new RGB(255, 255, 255)
     } 
+
     fill(color) {
         this.colour = color
     }
 
+    empty() {
+        this.colour = Constants.colours['x']
+    }
     draw (ctx) {
         ctx.beginPath()
         ctx.strokeStyle = this.borderColour.toHex()
@@ -104,6 +130,18 @@ export class Piece {
             let tile = this.grid.getTile(p[1], p[0])
             tile.fill(this.color)
         })
+    }
+
+    empty() {
+        this.shape.forEach(pos => {
+            let p = addVectors(pos, this.offset)
+            let tile = this.grid.getTile(p[1], p[0])
+            tile.empty()
+        })
+    }
+
+    fall() {
+        this.offset[0] += 1
     }
 
 }
