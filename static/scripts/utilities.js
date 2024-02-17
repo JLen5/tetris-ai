@@ -60,8 +60,12 @@ export class Constants {
         't': [
             [-1, 0], [0, -1], [0, 0], [0, 1]
         ],
-        'i': [[0, -1], [0, 0], [0, 1], [0, 2]],
-        'o': [[0, 0], [0, 1], [1, 0], [1, 1]]
+        'i': [
+            [0, -1], [0, 0], [0, 1], [0, 2]
+        ],
+        'o': [
+            [0, 0], [0, 1], [1, 0], [1, 1]
+        ]
     }
     static pieces = ['j', 'l', 's', 'z', 't', 'i', 'o']
 
@@ -71,7 +75,8 @@ export class Config {
     static FPS = 60
     static keys = {
         'left': 'arrowleft',
-        'right': 'arrowright'
+        'right': 'arrowright',
+        'up': 'arrowup'
     }
 }
 

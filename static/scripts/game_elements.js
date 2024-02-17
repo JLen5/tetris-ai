@@ -38,18 +38,25 @@ export class Game {
 
     handleKeys(inputs) {
         if (Config.keys['left'] in inputs.keys) {
-            if (inputs.keys[Config.keys['left']] <= 0) {
+            if (inputs.keys[Config.keys['left']] == 0) {
                 inputs.keys[Config.keys['left']] = 60
                 this.currentPiece.shift([-1, 0])
             }
         }
         if (Config.keys['right'] in inputs.keys) {
-            if (inputs.keys[Config.keys['right']] <= 0) {
+            if (inputs.keys[Config.keys['right']] == 0) {
                 console.log('hi')
                 inputs.keys[Config.keys['right']] = 60
                 this.currentPiece.shift([1, 0])
             }
         }
+        if(Config.keys['up'] in inputs.keys) {
+            if(inputs.keys[Config.keys['up']] == 0) {
+                inputs.keys[Config.keys['up']] = -1
+                this.currentPiece.rotate()
+            }
+        }
+        inputs.tick()
     }
 
     getRandomPiece() {
@@ -134,6 +141,7 @@ export class Piece {
     // id = 'j', 'l', 't', 's', 'z', 'i', 'o'
     constructor (grid, id) {
         this.grid = grid
+        this.id = id
         this.shape = Constants.shapes[id]
         this.color = Constants.colours[id]
         this.offset = [1, 4]
@@ -162,6 +170,19 @@ export class Piece {
 
     fall() {
         this.shift([0, 1])
+    }
+
+    rotate(cw=true) {
+        if(this.id == 'o') return
+        if (this.id == 'i') return
+        this.empty()
+        let d = cw ? 1 : -1
+        this.shape.map(pos => {
+            let r = pos[0]
+            let c = pos[1]
+            pos[0] = c * d
+            pos[1] = r *-1 * d
+        })
     }
 
 }
