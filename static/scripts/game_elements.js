@@ -40,24 +40,16 @@ export class Game {
         if (Config.keys['left'] in inputs.keys) {
             if (inputs.keys[Config.keys['left']] <= 0) {
                 inputs.keys[Config.keys['left']] = 60
-                // this.currentPiece.offset[1] -= 1
-                this.currentPiece.shift([0, -1])
+                this.currentPiece.shift([-1, 0])
             }
         }
         if (Config.keys['right'] in inputs.keys) {
             if (inputs.keys[Config.keys['right']] <= 0) {
                 console.log('hi')
                 inputs.keys[Config.keys['right']] = 60
-                // this.currentPiece.offset[1] += 1
-                this.currentPiece.shift([0, 1])
+                this.currentPiece.shift([1, 0])
             }
         }
-        // if (inputs.keys.includes(Config.keys['left'])) {
-        //     this.currentPiece.offset[1] -= 1
-        // }
-        // if (inputs.keys.includes(Config.keys['right'])) {
-        //     this.currentPiece.offset[1] += 1
-        // }
     }
 
     getRandomPiece() {
@@ -165,12 +157,11 @@ export class Piece {
 
     shift (vec) {
         this.empty()
-        this.offset = addVectors(this.offset, vec)
+        this.offset = addVectors(this.offset, vec.reverse())
     }
 
     fall() {
-        // this.offset[0] += 1
-        this.shift([1, 0])
+        this.shift([0, 1])
     }
 
 }
