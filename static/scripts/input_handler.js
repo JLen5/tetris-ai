@@ -16,11 +16,8 @@ export default class InputHandler {
      * Action(s) for one frame
      */
     tick() {
-        Object.keys(this.keys).filter( // filter to get only keys with cooldowns
-            k => {
-                this.keys[k] > 0
-            }
-        ).forEach(k => {  // subtract 1 from cooldown counter
+        Object.keys(this.keys).forEach(k => {  // subtract 1 from cooldown counter
+            if (this.keys[k] < 0) return 
             this.keys[k] -= 1
         })
     }
