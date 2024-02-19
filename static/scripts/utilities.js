@@ -76,7 +76,8 @@ export class Config {
     static keys = {
         'left': 'arrowleft',
         'right': 'arrowright',
-        'up': 'arrowup'
+        'rot-cw': 'arrowup',
+        'rot-ccw': 'o'
     }
 }
 

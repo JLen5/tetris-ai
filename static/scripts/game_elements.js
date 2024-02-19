@@ -37,24 +37,22 @@ export class Game {
     }
 
     handleKeys(inputs) {
-        if (Config.keys['left'] in inputs.keys) {
-            if (inputs.keys[Config.keys['left']] == 0) {
-                inputs.keys[Config.keys['left']] = 60
-                this.currentPiece.shift([-1, 0])
-            }
+        if (inputs.isPressed(Config.keys['left']) && inputs.isActive(Config.keys['left'])) {
+            inputs.setHoldCooldown(Config.keys['left'], 60)
+            this.currentPiece.shift([-1, 0])
         }
-        if (Config.keys['right'] in inputs.keys) {
-            if (inputs.keys[Config.keys['right']] == 0) {
-                console.log('hi')
-                inputs.keys[Config.keys['right']] = 60
-                this.currentPiece.shift([1, 0])
-            }
+        if (inputs.isPressed(Config.keys['right']) && inputs.isActive(Config.keys['right'])) {
+            inputs.setHoldCooldown(Config.keys['right'], 60)
+            this.currentPiece.shift([1, 0])
         }
-        if(Config.keys['up'] in inputs.keys) {
-            if(inputs.keys[Config.keys['up']] == 0) {
-                inputs.keys[Config.keys['up']] = -1
-                this.currentPiece.rotate()
-            }
+
+        if (inputs.isPressed(Config.keys['rot-cw']) && inputs.isActive(Config.keys['rot-cw'])) {
+            inputs.disableHold(Config.keys['rot-cw'])
+            this.currentPiece.rotate(true)
+        }
+        if (inputs.isPressed(Config.keys['rot-ccw']) && inputs.isActive(Config.keys['rot-ccw'])) {
+            inputs.disableHold(Config.keys['rot-ccw'])
+            this.currentPiece.rotate(false)
         }
         inputs.tick()
     }
@@ -174,14 +172,41 @@ export class Piece {
 
     rotate(cw=true) {
         if(this.id == 'o') return
-        if (this.id == 'i') return
         this.empty()
-        let d = cw ? 1 : -1
+
+        let a, b  // temporarily store row/col # 
+        let d // direction factor (do different math for cw vs. ccw)
+
+        // special case: i-piece rotation
+        if(this.id == 'i') {
+            d = cw ? 0 : 1  // if cw, swap a = row#, b = col# to a = col#, b = row# because it works
+            this.shape.map(pos => {
+                a = pos[0+d]
+                b = pos[1-d]
+                pos[0+d] = b  // cw: row becomes col ; ccw: col becomes row
+                pos[1-d] = 1-a  // from (a-1)*-1; it just works trust
+                // if (cw){
+                //     let r = pos[0]
+                //     let c = pos[1]
+                //     pos[0] = c
+                //     pos[1] = 1-r 
+                // } else {
+                //     let r = pos[0]
+                //     let c = pos[1]
+                //     pos[0] = 1-c
+                //     pos[1] = r
+                // }
+            })
+            return
+        }
+
+        // pieces that aren't i or o
+        d = cw ? 1 : -1  // if cw do nothing, if ccw switch signs because it works (#trustmebro)
         this.shape.map(pos => {
-            let r = pos[0]
-            let c = pos[1]
-            pos[0] = c * d
-            pos[1] = r *-1 * d
+            a = pos[0]  // a = row#
+            b = pos[1]  // b = col#
+            pos[0] = b * d  // cw: row becomes col; ccw: col becomes row
+            pos[1] = a *-1 * d  // cw: col becomes -row; ccw: row becomes -col; why?: because i said so 
         })
     }
 
