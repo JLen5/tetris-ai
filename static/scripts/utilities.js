@@ -77,7 +77,9 @@ export class Config {
         'left': 'arrowleft',
         'right': 'arrowright',
         'rot-cw': 'arrowup',
-        'rot-ccw': 'o'
+        'rot-ccw': 'o',
+        'soft-drop': 'arrowdown',
+        'hard-drop': ' '
     }
 }
 

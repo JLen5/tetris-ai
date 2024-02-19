@@ -37,11 +37,16 @@ export class Game {
      */
     update() {
         this.currentPiece.draw()  // draw current piece
+        this.currentPiece.updatePieceBounds()
         this.fallCounter += 1
         // if fallCounter satisfies interval, fall 1 tile
         if (this.fallCounter > this.fallInterval) {
-            this.currentPiece.fall()
-            this.fallCounter = 0
+            if (this.canMoveDown()) {
+                this.currentPiece.fall()
+                this.fallCounter = 0
+            } else {
+                this.newPiece()
+            }            
         }
     }
 
@@ -51,15 +56,18 @@ export class Game {
      */
     handleKeys(keyboard) {
         // if key is pressed and has no cooldown, do action
+        // left/right
         if (keyboard.isPressed(Config.keys['left']) && keyboard.isActive(Config.keys['left'])) {
             keyboard.setHoldCooldown(Config.keys['left'], 60)
+            if(!this.canMoveLeft()) return
             this.currentPiece.shift([-1, 0])
         }
         if (keyboard.isPressed(Config.keys['right']) && keyboard.isActive(Config.keys['right'])) {
             keyboard.setHoldCooldown(Config.keys['right'], 60)
+            if(!this.canMoveRight()) return
             this.currentPiece.shift([1, 0])
         }
-
+        // rotations
         if (keyboard.isPressed(Config.keys['rot-cw']) && keyboard.isActive(Config.keys['rot-cw'])) {
             keyboard.disableHold(Config.keys['rot-cw'])
             this.currentPiece.rotate(true)
@@ -67,6 +75,13 @@ export class Game {
         if (keyboard.isPressed(Config.keys['rot-ccw']) && keyboard.isActive(Config.keys['rot-ccw'])) {
             keyboard.disableHold(Config.keys['rot-ccw'])
             this.currentPiece.rotate(false)
+        }
+        // drop
+        if (keyboard.isPressed(Config.keys['soft-drop']) && keyboard.isActive(Config.keys['soft-drop'])) {
+            keyboard.setHoldCooldown(Config.keys['soft-drop'], 30)
+            if(!this.canMoveDown()) return
+            this.currentPiece.fall()
+            this.fallCounter = 0
         }
         keyboard.tick()
     }
@@ -84,6 +99,18 @@ export class Game {
     newPiece() {
         this.currentPiece = this.nextPiece
         this.nextPiece = this.getRandomPiece()
+    }
+
+    canMoveLeft() {
+        return this.currentPiece.bounds['left'] > 0
+    }
+
+    canMoveRight() {
+        return this.currentPiece.bounds['right'] < this.grid.gridW-1
+    }
+
+    canMoveDown() {
+        return this.currentPiece.bounds['bottom'] < this.grid.gridH-1
     }
 }
 
@@ -142,7 +169,7 @@ export class Tile {
         this.c = c
         this.w = w
         this.colour = Constants.colours['x']  // default to background color
-        this.borderColour = new RGB(255, 255, 255)
+        this.borderColour = new RGB(128, 128, 128)
     } 
     /**
      * Set tile color
@@ -154,6 +181,10 @@ export class Tile {
 
     empty() {
         this.colour = Constants.colours['x']
+    }
+
+    isEmpty() {
+        return this.colour == Constants.colours['x']
     }
 
     draw (ctx) {
@@ -177,6 +208,8 @@ export class Piece {
         this.shape = Constants.shapes[id]
         this.color = Constants.colours[id]
         this.offset = [1, 4]
+        this.bounds;
+        this.updatePieceBounds()
     }
 
     draw() {
@@ -223,21 +256,9 @@ export class Piece {
                 b = pos[1-d]
                 pos[0+d] = b  // cw: row becomes col ; ccw: col becomes row
                 pos[1-d] = 1-a  // from (a-1)*-1; it just works trust
-                // if (cw){
-                //     let r = pos[0]
-                //     let c = pos[1]
-                //     pos[0] = c
-                //     pos[1] = 1-r 
-                // } else {
-                //     let r = pos[0]
-                //     let c = pos[1]
-                //     pos[0] = 1-c
-                //     pos[1] = r
-                // }
             })
             return
         }
-
         // pieces that aren't i or o
         d = cw ? 1 : -1  // if cw do nothing, if ccw switch signs because it works (#trustmebro)
         this.shape.map(pos => {
@@ -246,6 +267,25 @@ export class Piece {
             pos[0] = b * d  // cw: row becomes col; ccw: col becomes row
             pos[1] = a *-1 * d  // cw: col becomes -row; ccw: row becomes -col; why?: because i said so 
         })
+    }
+
+    /**
+     * Retursn bounds of the piece:
+     * - 'left': col# of leftmost tile in piece
+     * - 'right': col# of rightmost tile in piece
+     * - 'bottom': row# of bottommost tile in piece
+     */
+    updatePieceBounds() {
+        let piecePos = addVectors(this.shape[0], this.offset)
+        let leftBound = piecePos[1], rightBound = piecePos[1], bottomBound = piecePos[0]
+        for (let i=1;i<this.shape.length;i++) {
+            piecePos = addVectors(this.shape[i], this.offset)
+            leftBound = Math.min(leftBound, piecePos[1])
+            rightBound = Math.max(rightBound, piecePos[1])
+            bottomBound = Math.max(bottomBound, piecePos[0])
+        }
+
+        this.bounds = {'left': leftBound, 'right': rightBound, 'bottom': bottomBound}
     }
 
 }
