@@ -12,7 +12,8 @@ import {
 
 import InputHandler from './input_handler.js'
 
-const canvas = document.querySelector('#game')
+
+const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
 
 const grid = new Grid(10, 20, 24)

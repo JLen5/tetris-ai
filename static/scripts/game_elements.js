@@ -1,6 +1,7 @@
 import {
     RGB, Constants, Config, addVectors
 } from './utilities.js'
+import InputHandler from './input_handler.js'
 
 export class Game {
     static fpsInterval = 1000 / Config.FPS
@@ -10,51 +11,64 @@ export class Game {
         this.currentPiece = this.getRandomPiece()
         this.nextPiece = this.getRandomPiece()
 
-        this.fallInterval = 2 * Config.FPS // seconds * FPS = frames
+        this.fallInterval = 2 * Config.FPS // seconds * FPS = frames; seconds to wait before applying gravity
         this.fallCounter = 0
 
         this.lastTime = Date.now();
         this.timeElapsed = 0
     }
 
+    /**
+     * Set frame rate of loop. Returns true if the time-length of 1 frame has passed
+     * - use in if() block; when true, run code for 1 frame, else do nothing
+     * @returns {boolean}
+     */
     tick() {
         this.timeElapsed =  Date.now() - this.lastTime
         if(this.timeElapsed > Game.fpsInterval){
             this.lastTime = Date.now() - (this.timeElapsed % Game.fpsInterval)
-            this.fallCounter += 1
             return true
         }
         return false
     }
 
+    /**
+     * Update game state
+     */
     update() {
-        this.currentPiece.draw()
+        this.currentPiece.draw()  // draw current piece
+        this.fallCounter += 1
+        // if fallCounter satisfies interval, fall 1 tile
         if (this.fallCounter > this.fallInterval) {
-            // this.currentPiece.empty()
             this.currentPiece.fall()
             this.fallCounter = 0
         }
     }
 
-    handleKeys(inputs) {
-        if (inputs.isPressed(Config.keys['left']) && inputs.isActive(Config.keys['left'])) {
-            inputs.setHoldCooldown(Config.keys['left'], 60)
+    /**
+     * 
+     * @param {InputHandler} keyboard 
+     */
+    handleKeys(keyboard) {
+        // if key is pressed and has no cooldown, do action
+        if (keyboard.isPressed(Config.keys['left']) && keyboard.isActive(Config.keys['left'])) {
+            keyboard.setHoldCooldown(Config.keys['left'], 60)
             this.currentPiece.shift([-1, 0])
         }
-        if (inputs.isPressed(Config.keys['right']) && inputs.isActive(Config.keys['right'])) {
-            inputs.setHoldCooldown(Config.keys['right'], 60)
+        if (keyboard.isPressed(Config.keys['right']) && keyboard.isActive(Config.keys['right'])) {
+            keyboard.setHoldCooldown(Config.keys['right'], 60)
             this.currentPiece.shift([1, 0])
         }
 
-        if (inputs.isPressed(Config.keys['rot-cw']) && inputs.isActive(Config.keys['rot-cw'])) {
-            inputs.disableHold(Config.keys['rot-cw'])
+        if (keyboard.isPressed(Config.keys['rot-cw']) && keyboard.isActive(Config.keys['rot-cw'])) {
+            keyboard.disableHold(Config.keys['rot-cw'])
             this.currentPiece.rotate(true)
         }
-        if (inputs.isPressed(Config.keys['rot-ccw']) && inputs.isActive(Config.keys['rot-ccw'])) {
-            inputs.disableHold(Config.keys['rot-ccw'])
+        if (keyboard.isPressed(Config.keys['rot-ccw']) && keyboard.isActive(Config.keys['rot-ccw'])) {
+            keyboard.disableHold(Config.keys['rot-ccw'])
             this.currentPiece.rotate(false)
         }
-        inputs.tick()
+        keyboard.tick()
     }
 
     getRandomPiece() {
@@ -74,6 +88,12 @@ export class Game {
 }
 
 export class Grid {
+    /**
+     * @constructor
+     * @param {number} gridW - # of tiles, width-wise
+     * @param {number} gridH - # of tiles, height-wise
+     * @param {number} tileW - width of 1 tile in grid
+     */
     constructor (gridW, gridH, tileW) {
         this.gridW = gridW
         this.gridH = gridH
@@ -100,7 +120,7 @@ export class Grid {
     update() {
         
     }
-
+    
     draw(ctx) {
         this.tiles.forEach(row => {
             row.forEach( t => {
@@ -111,14 +131,23 @@ export class Grid {
 }
 
 export class Tile {
+    /**
+     * @constructor
+     * @param {number} r - row #
+     * @param {number} c - column #
+     * @param {number} w - tile width
+     */
     constructor (r, c, w) {
         this.r = r
         this.c = c
         this.w = w
-        this.colour = Constants.colours['x']
+        this.colour = Constants.colours['x']  // default to background color
         this.borderColour = new RGB(255, 255, 255)
     } 
-
+    /**
+     * Set tile color
+     * @param {RGB} color 
+     */
     fill(color) {
         this.colour = color
     }
@@ -126,17 +155,22 @@ export class Tile {
     empty() {
         this.colour = Constants.colours['x']
     }
+
     draw (ctx) {
         ctx.beginPath()
-        ctx.strokeStyle = this.borderColour.toHex()
         ctx.fillStyle = this.colour.toHex()
-        ctx.fillRect(this.r*this.w, this.c*this.w, this.w, this.w)
-        ctx.strokeRect(this.r*this.w, this.c*this.w, this.w, this.w)
+        ctx.strokeStyle = this.borderColour.toHex()
+        ctx.fillRect(this.r*this.w, this.c*this.w, this.w, this.w) // draw tile
+        ctx.strokeRect(this.r*this.w, this.c*this.w, this.w, this.w) // draw border
     }
 }
 
 export class Piece {
-    // id = 'j', 'l', 't', 's', 'z', 'i', 'o'
+    /**
+     * @constructor
+     * @param {Grid} grid 
+     * @param {number} id - has value 'j', 'l', 't', 's', 'z', 'i' or 'o'
+     */
     constructor (grid, id) {
         this.grid = grid
         this.id = id
@@ -161,6 +195,10 @@ export class Piece {
         })
     }
 
+    /**
+     * Shift piece on the board in x/y direction
+     * @param {Array<number>} vec - [x, y] offset applied aka [c, r] **NOT [r, c]
+     */
     shift (vec) {
         this.empty()
         this.offset = addVectors(this.offset, vec.reverse())
