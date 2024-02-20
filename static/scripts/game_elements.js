@@ -7,7 +7,7 @@ export class Game {
     static fpsInterval = 1000 / Config.FPS
     constructor(grid) {
         this.grid = grid
-        this.bag = [...Constants.pieces]
+        this.bag = structuredClone(Constants.pieces)
         this.currentPiece = this.getRandomPiece()
         this.nextPiece = this.getRandomPiece()
 
@@ -89,7 +89,7 @@ export class Game {
     getRandomPiece() {
         // reset bag
         if (this.bag.length === 0) {
-            this.bag = [...Constants.pieces]
+            this.bag = structuredClone(Constants.pieces)
         }
 
         let idx = Math.floor(Math.random()*this.bag.length)
@@ -102,15 +102,15 @@ export class Game {
     }
 
     canMoveLeft() {
-        return this.currentPiece.bounds['left'] > 0
+        return this.grid.canMoveLeft(this.currentPiece)
     }
 
     canMoveRight() {
-        return this.currentPiece.bounds['right'] < this.grid.gridW-1
+        return this.grid.canMoveRight(this.currentPiece)
     }
 
     canMoveDown() {
-        return this.currentPiece.bounds['bottom'] < this.grid.gridH-1
+        return this.grid.canMoveDown(this.currentPiece)
     }
 }
 
@@ -155,6 +155,27 @@ export class Grid {
             })
         })
     }
+
+    canMoveLeft(piece) {
+        return piece.bounds['left'] > 0
+    }
+
+    canMoveRight(piece) {
+        return piece.bounds['right'] < this.gridW-1
+    }
+
+    canMoveDown(piece) {
+        return piece.bounds['bottom'] < this.gridH-1
+    }
+
+    spaceBelowPosition(r) {
+        spaceCount = 0
+        // tilesBelow = this.tiles.splice(0, r+1)
+    }
+
+    spaceBelowTile(tile) {
+        return this.spaceBelowPosition(tile.r)
+    }
 }
 
 export class Tile {
@@ -183,8 +204,8 @@ export class Tile {
         this.colour = Constants.colours['x']
     }
 
-    isEmpty() {
-        return this.colour == Constants.colours['x']
+    isOccupied() {
+        return this.colour = Constants.colours['x']
     }
 
     draw (ctx) {
@@ -208,8 +229,8 @@ export class Piece {
         this.shape = Constants.shapes[id]
         this.color = Constants.colours[id]
         this.offset = [1, 4]
-        this.bounds;
-        this.updatePieceBounds()
+        this.bounds;  // see updatePieceBounds() for description
+        this.updatePieceBounds()  // init value of this.bounds
     }
 
     draw() {
@@ -241,51 +262,73 @@ export class Piece {
         this.shift([0, 1])
     }
 
-    rotate(cw=true) {
-        if(this.id == 'o') return
-        this.empty()
-
+    getRotatedArray(cw=true) {
         let a, b  // temporarily store row/col # 
         let d // direction factor (do different math for cw vs. ccw)
-
+        let shape = structuredClone(this.shape)
         // special case: i-piece rotation
-        if(this.id == 'i') {
+        if (this.id == 'i') {
             d = cw ? 0 : 1  // if cw, swap a = row#, b = col# to a = col#, b = row# because it works
-            this.shape.map(pos => {
+            shape.map(pos => {
                 a = pos[0+d]
                 b = pos[1-d]
                 pos[0+d] = b  // cw: row becomes col ; ccw: col becomes row
                 pos[1-d] = 1-a  // from (a-1)*-1; it just works trust
             })
-            return
+        } else { // pieces that aren't i or o
+            d = cw ? 1 : -1  // if cw do nothing, if ccw switch signs because it works (#trustmebro)
+            shape.map(pos => {
+                a = pos[0]  // a = row#
+                b = pos[1]  // b = col#
+                pos[0] = b * d  // cw: row becomes col; ccw: col becomes row
+                pos[1] = a *-1 * d  // cw: col becomes -row; ccw: row becomes -col; why?: because i said so 
+            })
         }
-        // pieces that aren't i or o
-        d = cw ? 1 : -1  // if cw do nothing, if ccw switch signs because it works (#trustmebro)
-        this.shape.map(pos => {
-            a = pos[0]  // a = row#
-            b = pos[1]  // b = col#
-            pos[0] = b * d  // cw: row becomes col; ccw: col becomes row
-            pos[1] = a *-1 * d  // cw: col becomes -row; ccw: row becomes -col; why?: because i said so 
-        })
+        return shape
+    }
+
+    rotate(cw=true) {
+        if(this.id == 'o') return
+        this.empty()
+
+        let shape = this.getRotatedArray(cw)
+        shape = this.adjustRotate(shape)
+        this.shape = shape
+    }
+
+    adjustRotate(s) {
+        let shape = structuredClone(s)
+        let rotateBounds = this.#shapeBounds(shape, this.offset)
+        if(rotateBounds['left'] < 0) {
+            this.offset[1] += -rotateBounds['left']
+        } else if(rotateBounds['right'] > this.grid.gridW-1) {
+            this.offset[1] += this.grid.gridW-rotateBounds['right']-1
+        } else if(rotateBounds['bottom'] > this.grid.gridH-1) {
+            this.offset[0] += this.grid.gridH-rotateBounds['bottom']-1
+        }
+        return shape
+        
+    }
+
+    updatePieceBounds() {
+        this.bounds = this.#shapeBounds(this.shape, this.offset)
     }
 
     /**
-     * Retursn bounds of the piece:
+     * Returns bounds of the piece:
      * - 'left': col# of leftmost tile in piece
      * - 'right': col# of rightmost tile in piece
      * - 'bottom': row# of bottommost tile in piece
      */
-    updatePieceBounds() {
-        let piecePos = addVectors(this.shape[0], this.offset)
-        let leftBound = piecePos[1], rightBound = piecePos[1], bottomBound = piecePos[0]
-        for (let i=1;i<this.shape.length;i++) {
-            piecePos = addVectors(this.shape[i], this.offset)
-            leftBound = Math.min(leftBound, piecePos[1])
-            rightBound = Math.max(rightBound, piecePos[1])
-            bottomBound = Math.max(bottomBound, piecePos[0])
+    #shapeBounds(shape, offset=[0, 0]) {
+        let leftBound = shape[0][1], rightBound = shape[0][1], bottomBound = shape[0][0]
+        for (let i=1;i<shape.length;i++) {
+            leftBound = Math.min(leftBound, shape[i][1])
+            rightBound = Math.max(rightBound, shape[i][1])
+            bottomBound = Math.max(bottomBound, shape[i][0])
         }
 
-        this.bounds = {'left': leftBound, 'right': rightBound, 'bottom': bottomBound}
+        return {'left': leftBound + offset[1], 'right': rightBound + offset[1], 'bottom': bottomBound + offset[0]}
     }
 
 }

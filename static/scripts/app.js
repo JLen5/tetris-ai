@@ -28,6 +28,7 @@ function gameLoop() {
     if(game.tick()) {
         ctx.clearRect(0, 0, canvas.width, canvas.height) // clear canvas
         game.handleKeys(inputs)
+        
         game.update()
         grid.update()
         grid.draw(ctx)
