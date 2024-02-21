@@ -31,6 +31,15 @@ export class RGB {
 
         return '#' + hex
     }
+
+    isEqualTo(colour) {
+        return this.r == colour.r && this.g == colour.g && this.b == colour.b
+    }
+
+    getOpposite() {
+        return new RGB(255-this.r, 255-this.g, 255-this.b)
+    }
+    
 }
 
 export class Constants {
@@ -42,7 +51,9 @@ export class Constants {
         't': new RGB(128, 0, 128),
         'i': new RGB(0, 255, 255),
         'o': new RGB(255, 255, 0),
-        'x': new RGB(0, 0, 0)
+        'x': new RGB(0, 0, 0),
+        'gridline': new RGB(128, 128, 128),
+        'ghost': new RGB(0, 255, 120)
     }
     static shapes = {
         'j': [

@@ -36,8 +36,9 @@ export class Game {
      * Update game state
      */
     update() {
+        this.currentPiece.update()
+        this.currentPiece.drawGhost()
         this.currentPiece.draw()  // draw current piece
-        this.currentPiece.updatePieceBounds()
         this.fallCounter += 1
         // if fallCounter satisfies interval, fall 1 tile
         if (this.fallCounter > this.fallInterval) {
@@ -165,7 +166,8 @@ export class Grid {
     }
 
     canMoveDown(piece) {
-        return piece.bounds['bottom'] < this.gridH-1
+        // return piece.bounds['bottom'] < this.gridH-1
+        return piece.bottomSpacing() > 0
     }
 
     spaceBelowPosition(r, c) {
@@ -173,14 +175,17 @@ export class Grid {
         let rowsBelow = this.tiles.slice(r+1)
         for(let i=0;i<rowsBelow.length;i++) {
             let tile = rowsBelow[i][c]
-            if (tile.isOccupied()) break
+            console.log(tile.colour)
+            if (tile.isOccupied()) {
+                break
+            }
             spaceCount++
         }
         return spaceCount
     }
 
     spaceBelowTile(tile) {
-        return this.spaceBelowPosition(tile.r)
+        return this.spaceBelowPosition(tile.r, tile.c)
     }
 }
 
@@ -195,23 +200,24 @@ export class Tile {
         this.r = r
         this.c = c
         this.w = w
-        this.colour = Constants.colours['x']  // default to background color
-        this.borderColour = new RGB(128, 128, 128)
+        this.colour = Constants.colours['x']  // default to background colour
+        this.borderColour = Constants.colours['gridline']
     } 
     /**
-     * Set tile color
-     * @param {RGB} color 
+     * Set tile colour
+     * @param {RGB} colour 
      */
-    fill(color) {
-        this.colour = color
+    fill(colour) {
+        this.colour = colour
     }
 
     empty() {
+        this.borderColour = Constants.colours['gridline']
         this.colour = Constants.colours['x']
     }
 
     isOccupied() {
-        return this.colour = Constants.colours['x']
+        return !(this.colour.isEqualTo(Constants.colours['x']) || this.colour.isEqualTo(Constants.colours['ghost']))
     }
 
     draw (ctx) {
@@ -233,29 +239,39 @@ export class Piece {
         this.grid = grid
         this.id = id
         this.shape = Constants.shapes[id]
-        this.color = Constants.colours[id]
+        this.colour = Constants.colours[id]
         this.offset = [1, 4]
         this.bounds;  // see updatePieceBounds() for description
         this.updatePieceBounds()  // init value of this.bounds
+        this.spacing;
+        this.tiles = this.getTiles()
+        this.ghost = []
+    }
+
+    update() {
+        this.tiles = this.getTiles()
+        this.updatePieceBounds()
     }
 
     draw() {
-        
-        // console.log(this.grid.spaceBelowPosition(p[0], p[1]))
-        this.shape.forEach(pos => {
-            let p = addVectors(pos, this.offset)
-            console.log(p)
-            let tile = this.grid.getTile(p[0], p[1])
-            tile.fill(this.color)
-            // console.log(this.grid.spaceBelowPosition(p[0], p[1]))
+        this.tiles.forEach(tile => {
+            tile.fill(this.colour)
         })
     }
 
     empty() {
-        this.shape.forEach(pos => {
-            let p = addVectors(pos, this.offset)
-            let tile = this.grid.getTile(p[0], p[1])
+        this.tiles.forEach(tile => {
             tile.empty()
+        })
+    }
+
+    drawGhost() {
+        this.ghost.forEach(tile => {
+            tile.empty()
+        })
+        this.ghost = this.getGhostTiles()
+        this.ghost.forEach(tile => {
+            tile.fill(Constants.colours['ghost'])
         })
     }
 
@@ -266,6 +282,7 @@ export class Piece {
     shift (vec) {
         this.empty()
         this.offset = addVectors(this.offset, vec.reverse())
+        console.log(this.offset)
     }
 
     fall() {
@@ -340,4 +357,52 @@ export class Piece {
         return {'left': leftBound + offset[1], 'right': rightBound + offset[1], 'bottom': bottomBound + offset[0]}
     }
 
+    getTiles() {
+        let tiles = []
+        this.shape.forEach(pos => {
+            let p = addVectors(pos, this.offset)
+            let tile = this.grid.getTile(p[0], p[1])
+            tiles.push(tile)
+        })
+        return tiles
+    }
+
+    getBottomPieceTiles() {
+        let tiles = []
+        let cols = {}
+        this.tiles.forEach(tile => {
+            if(cols[tile.c] != null && cols[tile.c].r > tile.r) return
+            cols[tile.c] = tile
+        })
+        for (const col in cols) {
+            tiles.push(cols[col])
+        }
+        return tiles
+    }
+
+    bottomSpacing() {
+        let bottomTiles = this.getBottomPieceTiles()
+        let spaceBelow = this.grid.gridH
+        bottomTiles.forEach(tile => {
+            spaceBelow = Math.min(spaceBelow, this.grid.spaceBelowTile(tile))
+            console.log("tile", tile, this.grid.spaceBelowTile(tile))
+        })
+        return spaceBelow
+    }
+
+    getGhostTiles() {
+        let ghostTiles = []
+        let bottomTiles = this.getBottomPieceTiles()
+        let spaceBelow = this.grid.gridH
+        bottomTiles.forEach(tile => {
+            spaceBelow = Math.min(spaceBelow, this.grid.spaceBelowTile(tile))
+            console.log("tile", tile, this.grid.spaceBelowTile(tile))
+        })
+        console.log("space below", spaceBelow)
+        if(spaceBelow == 0) return []
+        this.tiles.forEach(tile => {
+            ghostTiles.push(this.grid.getTile(tile.r + spaceBelow, tile.c))
+        })
+        return ghostTiles
+    }
 }
