@@ -130,9 +130,9 @@ export class Grid {
 
     #buildGrid() {
         let tiles = []
-        for (let i = 0; i < this.gridW; i++) {
+        for (let i = 0; i < this.gridH; i++) {
             let row = []
-            for (let j = 0; j < this.gridH; j++) {
+            for (let j = 0; j < this.gridW; j++) {
                 row.push(new Tile(i, j, this.tileW))
             }
             tiles.push(row)
@@ -168,9 +168,15 @@ export class Grid {
         return piece.bounds['bottom'] < this.gridH-1
     }
 
-    spaceBelowPosition(r) {
-        spaceCount = 0
-        // tilesBelow = this.tiles.splice(0, r+1)
+    spaceBelowPosition(r, c) {
+        let spaceCount = 0
+        let rowsBelow = this.tiles.slice(r+1)
+        for(let i=0;i<rowsBelow.length;i++) {
+            let tile = rowsBelow[i][c]
+            if (tile.isOccupied()) break
+            spaceCount++
+        }
+        return spaceCount
     }
 
     spaceBelowTile(tile) {
@@ -212,8 +218,8 @@ export class Tile {
         ctx.beginPath()
         ctx.fillStyle = this.colour.toHex()
         ctx.strokeStyle = this.borderColour.toHex()
-        ctx.fillRect(this.r*this.w, this.c*this.w, this.w, this.w) // draw tile
-        ctx.strokeRect(this.r*this.w, this.c*this.w, this.w, this.w) // draw border
+        ctx.fillRect(this.c*this.w, this.r*this.w, this.w, this.w) // draw tile
+        ctx.strokeRect(this.c*this.w, this.r*this.w, this.w, this.w) // draw border
     }
 }
 
@@ -234,17 +240,21 @@ export class Piece {
     }
 
     draw() {
+        
+        // console.log(this.grid.spaceBelowPosition(p[0], p[1]))
         this.shape.forEach(pos => {
             let p = addVectors(pos, this.offset)
-            let tile = this.grid.getTile(p[1], p[0])
+            console.log(p)
+            let tile = this.grid.getTile(p[0], p[1])
             tile.fill(this.color)
+            // console.log(this.grid.spaceBelowPosition(p[0], p[1]))
         })
     }
 
     empty() {
         this.shape.forEach(pos => {
             let p = addVectors(pos, this.offset)
-            let tile = this.grid.getTile(p[1], p[0])
+            let tile = this.grid.getTile(p[0], p[1])
             tile.empty()
         })
     }
@@ -260,6 +270,15 @@ export class Piece {
 
     fall() {
         this.shift([0, 1])
+    }
+
+    rotate(cw=true) {
+        if(this.id == 'o') return
+        this.empty()
+
+        let shape = this.getRotatedArray(cw)
+        shape = this.adjustRotate(shape)
+        this.shape = shape
     }
 
     getRotatedArray(cw=true) {
@@ -287,15 +306,6 @@ export class Piece {
         return shape
     }
 
-    rotate(cw=true) {
-        if(this.id == 'o') return
-        this.empty()
-
-        let shape = this.getRotatedArray(cw)
-        shape = this.adjustRotate(shape)
-        this.shape = shape
-    }
-
     adjustRotate(s) {
         let shape = structuredClone(s)
         let rotateBounds = this.#shapeBounds(shape, this.offset)
@@ -307,7 +317,6 @@ export class Piece {
             this.offset[0] += this.grid.gridH-rotateBounds['bottom']-1
         }
         return shape
-        
     }
 
     updatePieceBounds() {
