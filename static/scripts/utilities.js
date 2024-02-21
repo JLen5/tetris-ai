@@ -99,5 +99,7 @@ export function addVectors(v1, v2) {
 }
 
 export function getColumn(arr, idx) {
+    console.log(arr)
+    console.log(idx)
     return arr.map(x => x[idx])
 }

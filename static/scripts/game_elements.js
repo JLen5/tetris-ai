@@ -1,5 +1,5 @@
 import {
-    RGB, Constants, Config, addVectors
+    RGB, Constants, Config, addVectors, getColumn
 } from './utilities.js'
 import InputHandler from './input_handler.js'
 
@@ -158,11 +158,11 @@ export class Grid {
     }
 
     canMoveLeft(piece) {
-        return piece.bounds['left'] > 0
+        return piece.leftSpacing() > 0
     }
 
     canMoveRight(piece) {
-        return piece.bounds['right'] < this.gridW-1
+        return piece.rightSpacing() > 0
     }
 
     canMoveDown(piece) {
@@ -175,9 +175,7 @@ export class Grid {
         let rowsBelow = this.tiles.slice(r+1)
         for(let i=0;i<rowsBelow.length;i++) {
             let tile = rowsBelow[i][c]
-            if (tile.isOccupied()) {
-                break
-            }
+            if (tile.isOccupied()) break
             spaceCount++
         }
         return spaceCount
@@ -185,6 +183,26 @@ export class Grid {
 
     spaceBelowTile(tile) {
         return this.spaceBelowPosition(tile.r, tile.c)
+    }
+
+    spaceLeftTile(tile) {
+        let spaceCount = 0
+        for(let j=tile.c-1;j>=0;j--) {
+            let t = this.tiles[tile.r][j]
+            if(t.isOccupied()) break
+            spaceCount++
+        }
+        return spaceCount
+    }
+
+    spaceRightTile(tile) {
+        let spaceCount = 0
+        for(let j=tile.c+1;j<this.gridW;j++) {
+            let t = this.tiles[tile.r][j]
+            if(t.isOccupied()) break
+            spaceCount ++
+        }
+        return spaceCount
     }
 }
 
@@ -378,6 +396,20 @@ export class Piece {
         return tiles
     }
 
+    getSidePieceTiles(left=true) {
+        let tiles = []
+        let rows = {}
+        let l = left ? 1 : -1
+        this.tiles.forEach(tile => {
+            if(rows[tile.r] != null && rows[tile.r].c*l < tile.c*l) return
+            rows[tile.r] = tile
+        })
+        for(const row in rows) {
+            tiles.push(rows[row])
+        }
+        return tiles
+    }
+
     bottomSpacing() {
         let bottomTiles = this.getBottomPieceTiles()
         let spaceBelow = this.grid.gridH
@@ -385,6 +417,24 @@ export class Piece {
             spaceBelow = Math.min(spaceBelow, this.grid.spaceBelowTile(tile))
         })
         return spaceBelow
+    }
+    
+    leftSpacing() {
+        let leftTiles = this.getSidePieceTiles(true)
+        let spaceLeft = this.grid.gridW
+        leftTiles.forEach(tile => {
+            spaceLeft = Math.min(spaceLeft, this.grid.spaceLeftTile(tile))
+        })
+        return spaceLeft
+    }
+
+    rightSpacing() {
+        let rightTiles = this.getSidePieceTiles(false)
+        let spaceRight = this.grid.gridW
+        rightTiles.forEach(tile => {
+            spaceRight = Math.min(spaceRight, this.grid.spaceRightTile(tile))
+        })
+        return spaceRight
     }
 
     getGhostTiles() {
