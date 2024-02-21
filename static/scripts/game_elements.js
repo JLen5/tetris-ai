@@ -175,7 +175,6 @@ export class Grid {
         let rowsBelow = this.tiles.slice(r+1)
         for(let i=0;i<rowsBelow.length;i++) {
             let tile = rowsBelow[i][c]
-            console.log(tile.colour)
             if (tile.isOccupied()) {
                 break
             }
@@ -282,7 +281,6 @@ export class Piece {
     shift (vec) {
         this.empty()
         this.offset = addVectors(this.offset, vec.reverse())
-        console.log(this.offset)
     }
 
     fall() {
@@ -385,7 +383,6 @@ export class Piece {
         let spaceBelow = this.grid.gridH
         bottomTiles.forEach(tile => {
             spaceBelow = Math.min(spaceBelow, this.grid.spaceBelowTile(tile))
-            console.log("tile", tile, this.grid.spaceBelowTile(tile))
         })
         return spaceBelow
     }
@@ -396,9 +393,7 @@ export class Piece {
         let spaceBelow = this.grid.gridH
         bottomTiles.forEach(tile => {
             spaceBelow = Math.min(spaceBelow, this.grid.spaceBelowTile(tile))
-            console.log("tile", tile, this.grid.spaceBelowTile(tile))
         })
-        console.log("space below", spaceBelow)
         if(spaceBelow == 0) return []
         this.tiles.forEach(tile => {
             ghostTiles.push(this.grid.getTile(tile.r + spaceBelow, tile.c))
