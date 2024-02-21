@@ -142,6 +142,7 @@ export class Grid {
     }
 
     getTile(r, c) {
+        if(this.tiles[r] == null) return null
         return this.tiles[r][c]
     }
 
@@ -166,7 +167,6 @@ export class Grid {
     }
 
     canMoveDown(piece) {
-        // return piece.bounds['bottom'] < this.gridH-1
         return piece.bottomSpacing() > 0
     }
 
@@ -258,8 +258,8 @@ export class Piece {
         this.shape = Constants.shapes[id]
         this.colour = Constants.colours[id]
         this.offset = [1, 4]
-        this.bounds;  // see updatePieceBounds() for description
-        this.updatePieceBounds()  // init value of this.bounds
+        // this.bounds;  // see updatePieceBounds() for description
+        // this.updatePieceBounds()  // init value of this.bounds
         this.spacing;
         this.tiles = this.getTiles()
         this.ghost = []
@@ -267,7 +267,7 @@ export class Piece {
 
     update() {
         this.tiles = this.getTiles()
-        this.updatePieceBounds()
+        // this.updatePieceBounds()
     }
 
     draw() {
@@ -310,8 +310,11 @@ export class Piece {
         this.empty()
 
         let shape = this.getRotatedArray(cw)
-        shape = this.adjustRotate(shape)
-        this.shape = shape
+        // shape = this.adjustRotate(shape)
+        if (this.adjustRotate(shape)) {
+            this.shape = shape
+        }
+        // this.shape = shape
     }
 
     getRotatedArray(cw=true) {
@@ -340,21 +343,40 @@ export class Piece {
     }
 
     adjustRotate(s) {
-        let shape = structuredClone(s)
-        let rotateBounds = this.#shapeBounds(shape, this.offset)
-        if(rotateBounds['left'] < 0) {
-            this.offset[1] += -rotateBounds['left']
-        } else if(rotateBounds['right'] > this.grid.gridW-1) {
-            this.offset[1] += this.grid.gridW-rotateBounds['right']-1
-        } else if(rotateBounds['bottom'] > this.grid.gridH-1) {
-            this.offset[0] += this.grid.gridH-rotateBounds['bottom']-1
+        let rotatedShape = structuredClone(s)
+        let offset = structuredClone(this.offset)
+        for(let i=0;i<rotatedShape.length;i++) {
+            let tilePos = addVectors(rotatedShape[i], offset)
+            // check if tile out of bounds after rotating
+            if(tilePos[1] < 0) {
+                offset[1] += 1
+            } else if(tilePos[1] > this.grid.gridW-1) {
+                offset[1] -= 1
+            } else if (tilePos[0] > this.grid.gridH-1) {
+                offset[0] -= 1
+            }
         }
-        return shape
+        // check if new rotation overlaps existing blocks; if it does, cancel rotation
+        for(let i=0;i<rotatedShape.length;i++) {
+            let tilePos = addVectors(rotatedShape[i], offset)
+            let tile = this.grid.getTile(tilePos[0], tilePos[1])
+            if(tile == null || tile.isOccupied()) return false
+        }
+        this.offset = offset
+        return true
+        // let rotateBounds = this.#shapeBounds(shape, this.offset)
+        // if(rotateBounds['left'] < 0) {
+        //     this.offset[1] += -rotateBounds['left']
+        // } else if(rotateBounds['right'] > this.grid.gridW-1) {
+        //     this.offset[1] += this.grid.gridW-rotateBounds['right']-1
+        // } else if(rotateBounds['bottom'] > this.grid.gridH-1) {
+        //     this.offset[0] += this.grid.gridH-rotateBounds['bottom']-1
+        // }
     }
 
-    updatePieceBounds() {
-        this.bounds = this.#shapeBounds(this.shape, this.offset)
-    }
+    // updatePieceBounds() {
+    //     this.bounds = this.#shapeBounds(this.shape, this.offset)
+    // }
 
     /**
      * Returns bounds of the piece:
@@ -362,16 +384,16 @@ export class Piece {
      * - 'right': col# of rightmost tile in piece
      * - 'bottom': row# of bottommost tile in piece
      */
-    #shapeBounds(shape, offset=[0, 0]) {
-        let leftBound = shape[0][1], rightBound = shape[0][1], bottomBound = shape[0][0]
-        for (let i=1;i<shape.length;i++) {
-            leftBound = Math.min(leftBound, shape[i][1])
-            rightBound = Math.max(rightBound, shape[i][1])
-            bottomBound = Math.max(bottomBound, shape[i][0])
-        }
+    // #shapeBounds(shape, offset=[0, 0]) {
+    //     let leftBound = shape[0][1], rightBound = shape[0][1], bottomBound = shape[0][0]
+    //     for (let i=1;i<shape.length;i++) {
+    //         leftBound = Math.min(leftBound, shape[i][1])
+    //         rightBound = Math.max(rightBound, shape[i][1])
+    //         bottomBound = Math.max(bottomBound, shape[i][0])
+    //     }
 
-        return {'left': leftBound + offset[1], 'right': rightBound + offset[1], 'bottom': bottomBound + offset[0]}
-    }
+    //     return {'left': leftBound + offset[1], 'right': rightBound + offset[1], 'bottom': bottomBound + offset[0]}
+    // }
 
     getTiles() {
         let tiles = []
