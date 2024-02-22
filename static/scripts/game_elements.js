@@ -11,7 +11,7 @@ export class Game {
         this.currentPiece = this.getRandomPiece()
         this.nextPiece = this.getRandomPiece()
 
-        this.fallInterval = 2 * Config.FPS // seconds * FPS = frames; seconds to wait before applying gravity
+        this.fallInterval = 0.5 * Config.FPS // seconds * FPS = frames; seconds to wait before applying gravity
         this.fallCounter = 0
 
         this.lastTime = Date.now();
@@ -46,6 +46,7 @@ export class Game {
                 this.currentPiece.fall()
                 this.fallCounter = 0
             } else {
+                this.clearLines()
                 this.newPiece()
             }            
         }
@@ -77,12 +78,18 @@ export class Game {
             keyboard.disableHold(Config.keys['rot-ccw'])
             this.currentPiece.rotate(false)
         }
-        // drop
+        // soft drop
         if (keyboard.isPressed(Config.keys['soft-drop']) && keyboard.isActive(Config.keys['soft-drop'])) {
             keyboard.setHoldCooldown(Config.keys['soft-drop'], 30)
             if(!this.canMoveDown()) return
             this.currentPiece.fall()
             this.fallCounter = 0
+        }
+        // hard drop
+        if (keyboard.isPressed(Config.keys['hard-drop']) && keyboard.isActive(Config.keys['hard-drop'])) {
+            keyboard.disableHold(Config.keys['hard-drop'])
+            this.currentPiece.hardDrop()
+            this.fallCounter = this.fallInterval+1
         }
         keyboard.tick()
     }
@@ -113,6 +120,17 @@ export class Game {
     canMoveDown() {
         return this.grid.canMoveDown(this.currentPiece)
     }
+
+    clearLines() {
+        let checkRows = this.currentPiece.getOccupiedRows().sort()
+        let linesCleared = 0
+        checkRows.forEach(row => {
+            if(!this.grid.rowIsFull(row)) return
+            linesCleared ++
+            this.grid.clearRow(row)
+        })
+        return linesCleared
+    }
 }
 
 export class Grid {
@@ -132,11 +150,7 @@ export class Grid {
     #buildGrid() {
         let tileData = []
         for (let i = 0; i < this.gridH; i++) {
-            let row = []
-            for (let j = 0; j < this.gridW; j++) {
-                row.push(Constants.colours['x'])
-            }
-            tileData.push(row)
+            tileData.push(Array(this.gridW).fill(Constants.colours['x']))
         }
         return tileData
     }
@@ -210,10 +224,11 @@ export class Grid {
         return !(r.isEqualTo(Constants.colours['x']) || r.isEqualTo(Constants.colours['ghost'])) // if only one argument, r = colour of a tile
     }
 
-    rowIsEmpty(row) {
-        self.tileData[row].forEach(tile => {
-            if(this.tileIsOccupied(tile)) return false
-        })
+    rowIsFull(r) {
+        let row = this.tileData[r]
+        for(let j=0;j<row.length;j++) {
+            if(!this.tileIsOccupied(row[j])) return false
+        }
         return true
     }
 
@@ -255,6 +270,11 @@ export class Grid {
     fillTile(r, c, colour) {
         this.tileData[r][c] = colour
     }
+
+    clearRow (r) {
+        this.tileData.splice(r, 1) // remove row from tile data
+        this.tileData.splice(0, 0, Array(this.gridW).fill(Constants.colours['x']))  // add empty row to top
+    }
 }
 
 export class Piece {
@@ -272,6 +292,7 @@ export class Piece {
         this.offset = [1, 4]
         this.spacing;
         this.ghost = []
+        this.ghostOffset = 0
     }
 
     draw () {
@@ -440,6 +461,7 @@ export class Piece {
         tiles.forEach(tile => {
             ghostTiles.push([tile[0] + spaceBelow, tile[1]])
         })
+        this.ghostOffset = spaceBelow
         return ghostTiles
     }
 
@@ -457,7 +479,7 @@ export class Piece {
         })
     }
 
-    occupiedRows() {
+    getOccupiedRows() {
         let rows = []
         let tiles = this.getTiles()
         tiles.forEach(tile => {
@@ -465,5 +487,15 @@ export class Piece {
             rows.push(tile[0])
         })
         return rows
+    }
+
+    hardDrop() {
+        this.empty()
+        this.offset[0] += this.ghostOffset
+        let ghostTiles = this.getGhostTiles()
+        ghostTiles.forEach(tile => {
+            this.grid.fillTile(tile[0], tile[1], this.colour)
+        })
+        this.ghostOffset = 0
     }
 }
