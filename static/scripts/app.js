@@ -1,12 +1,5 @@
 import {
-    RGB,
-    Constants
-} from './utilities.js'
-
-import {
-    Grid, 
-    Tile,
-    Piece,
+    Grid,
     Game
 } from './game_elements.js'
 
@@ -30,7 +23,6 @@ function gameLoop() {
         game.handleKeys(inputs)
         
         game.update()
-        grid.update()
         grid.draw(ctx)
     }
     requestAnimationFrame(gameLoop)

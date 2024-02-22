@@ -52,7 +52,7 @@ export class Constants {
         'i': new RGB(0, 255, 255),
         'o': new RGB(255, 255, 0),
         'x': new RGB(0, 0, 0),
-        'gridline': new RGB(128, 128, 128),
+        'gridline': new RGB(40, 40, 40),
         'ghost': new RGB(80, 80, 80)
     }
     static shapes = {
