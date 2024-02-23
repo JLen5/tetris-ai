@@ -75,7 +75,7 @@ export class Constants {
             [0, -1], [0, 0], [0, 1], [0, 2]
         ],
         'o': [
-            [0, 0], [0, 1], [1, 0], [1, 1]
+            [-1, 0], [-1, 1], [0, 0], [0, 1]
         ]
     }
     static pieces = ['j', 'l', 's', 'z', 't', 'i', 'o']
@@ -85,13 +85,15 @@ export class Constants {
 export class Config {
     static FPS = 60
     static keys = {
-        'left': 'arrowleft',
-        'right': 'arrowright',
-        'rot-cw': 'arrowup',
+        'left': 'j',
+        'right': 'l',
+        'rot-cw': 'i',
         'rot-ccw': 'o',
-        'soft-drop': 'arrowdown',
-        'hard-drop': ' '
+        'soft-drop': 'k',
+        'hard-drop': ' ',
+        'hold': 'c'
     }
+    static lookAheadCount = 5
 }
 
 export function addVectors(v1, v2) {

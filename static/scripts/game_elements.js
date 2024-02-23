@@ -5,17 +5,27 @@ import InputHandler from './input_handler.js'
 
 export class Game {
     static fpsInterval = 1000 / Config.FPS
-    constructor(grid) {
+    constructor(grid, lookahead, holdDisplay) {
         this.grid = grid
+        this.lookahead = lookahead
+        this.holdDisplay = holdDisplay
         this.bag = structuredClone(Constants.pieces)
         this.currentPiece = this.getRandomPiece()
-        this.nextPiece = this.getRandomPiece()
+        this.heldPiece = null
+        this.queue = this.#fullQueue(Config.lookAheadCount)
 
         this.fallInterval = 0.5 * Config.FPS // seconds * FPS = frames; seconds to wait before applying gravity
         this.fallCounter = 0
 
         this.lastTime = Date.now();
         this.timeElapsed = 0
+        
+        this.level = 0
+        this.points = 0
+
+        this.canHold = true
+        this.refreshLookahead = true
+        this.refreshHoldDisplay = true
     }
 
     /**
@@ -35,7 +45,7 @@ export class Game {
     /**
      * Update game state
      */
-    update() {
+    update(ctx) {
         // this.currentPiece.update()
         this.currentPiece.drawGhost()
         this.currentPiece.draw()  // draw current piece
@@ -48,10 +58,11 @@ export class Game {
             } else {
                 this.clearLines()
                 this.newPiece()
+                this.canHold = true
             }            
         }
+        this.grid.draw(ctx)
     }
-
     /**
      * 
      * @param {InputHandler} keyboard 
@@ -91,6 +102,13 @@ export class Game {
             this.currentPiece.hardDrop()
             this.fallCounter = this.fallInterval+1
         }
+
+        if(keyboard.isPressed(Config.keys['hold']) && keyboard.isActive(Config.keys['hold'])) {
+            keyboard.disableHold(Config.keys['hold'])
+            if(!this.canHold) return
+            this.canHold = false
+            this.hold()
+        }
         keyboard.tick()
     }
 
@@ -105,8 +123,7 @@ export class Game {
     }
 
     newPiece() {
-        this.currentPiece = this.nextPiece
-        this.nextPiece = this.getRandomPiece()
+        this.currentPiece = this.editQueue()
     }
 
     canMoveLeft() {
@@ -131,6 +148,62 @@ export class Game {
         })
         return linesCleared
     }
+
+    #fullQueue(lookAheadCount) {
+        let queue = []
+        for(let i=0;i<lookAheadCount;i++) {
+            queue.push(this.getRandomPiece())
+        }
+        return queue
+    }
+
+    hold() {
+        this.currentPiece.empty()
+        this.currentPiece.emptyGhost()
+        ;[this.heldPiece, this.currentPiece] = [this.currentPiece, this.heldPiece]
+        this.heldPiece.reset()
+        if(this.currentPiece == null) {
+            this.currentPiece = this.editQueue()
+        }
+        this.refreshHoldDisplay = true
+    }
+
+    updateLookahead(ctx) {
+        if(!this.refreshLookahead) return
+        console.log('update')
+        this.refreshLookahead = false
+        let offset = [1, 1]
+        this.lookahead.resetGrid()
+        let v;
+        this.queue.forEach(piece => {
+            Constants.shapes[piece.id].forEach(tile => {
+                v = addVectors(offset, tile)
+                this.lookahead.fillTile(v[0], v[1], Constants.colours[piece.id])
+            })
+            offset[0] += 3
+            
+        })
+
+        this.lookahead.draw(ctx)
+    }
+
+    editQueue() {
+        this.queue.push(this.getRandomPiece())
+        this.refreshLookahead = true
+        return this.queue.shift()
+    }
+
+    updateHoldDisplay(ctx) {
+        if(!this.refreshHoldDisplay || this.heldPiece == null) return
+        this.refreshHoldDisplay = false
+        this.holdDisplay.resetGrid()
+        let v;
+        Constants.shapes[this.heldPiece.id].forEach(tile => {
+            v = addVectors(tile, [1,1])
+            this.holdDisplay.fillTile(v[0], v[1], Constants.colours[this.heldPiece.id])
+        })
+        this.holdDisplay.draw(ctx)
+    }
 }
 
 export class Grid {
@@ -140,10 +213,11 @@ export class Grid {
      * @param {number} gridH - # of tiles, height-wise
      * @param {number} tileW - width of 1 tile in grid
      */
-    constructor (gridW, gridH, tileW) {
+    constructor (gridW, gridH, tileW, lineColour) {
         this.gridW = gridW
         this.gridH = gridH
         this.tileW = tileW
+        this.lineColour = lineColour
         this.tileData = this.#buildGrid()
     }
 
@@ -153,6 +227,10 @@ export class Grid {
             tileData.push(Array(this.gridW).fill(Constants.colours['x']))
         }
         return tileData
+    }
+
+    resetGrid() {
+        this.tileData = this.#buildGrid()
     }
 
     getTileData(r, c) {
@@ -174,16 +252,12 @@ export class Grid {
         let tile = this.tileData[r][c]
         ctx.fillStyle = tile.toHex()
         ctx.fillRect(c*this.tileW, r*this.tileW, this.tileW, this.tileW)
-        
-        // ctx.fillStyle = this.colour.toHex()
-        // ctx.strokeStyle = this.borderColour.toHex()
-        // ctx.fillRect(this.c*this.w, this.r*this.w, this.w, this.w) // draw tile
-        // ctx.strokeRect(this.c*this.w, this.r*this.w, this.w, this.w) // draw border
     }
 
     drawGrid(ctx) {
+        if(this.lineColour == null) return
         ctx.beginPath()
-        ctx.strokeStyle = Constants.colours['gridline'].toHex()
+        ctx.strokeStyle = this.lineColour.toHex()
         ctx.lineWidth = 1
         // vertical lines
         let maxX = this.gridW*this.tileW, maxY = this.gridH*this.tileW
@@ -281,7 +355,7 @@ export class Piece {
     /**
      * @constructor
      * @param {Grid} grid 
-     * @param {number} id - has value 'j', 'l', 't', 's', 'z', 'i' or 'o'
+     * @param {String} id - has value 'j', 'l', 't', 's', 'z', 'i' or 'o'
      */
 
     constructor (grid, id) {
@@ -307,6 +381,13 @@ export class Piece {
         tiles.forEach(tile => {
             this.grid.emptyTile(tile[0], tile[1])
         })
+    }
+
+    reset() {
+        this.offset = [1, 4]
+        this.shape = Constants.shapes[this.id]
+        this.ghost = []
+        this.ghostOffset = 0
     }
 
     getTiles() {
@@ -457,11 +538,11 @@ export class Piece {
         bottomTiles.forEach(tile => {
             spaceBelow = Math.min(spaceBelow, this.grid.spaceBelowTile(tile[0], tile[1]))
         })
+        this.ghostOffset = spaceBelow
         if(spaceBelow == 0) return []
         tiles.forEach(tile => {
             ghostTiles.push([tile[0] + spaceBelow, tile[1]])
         })
-        this.ghostOffset = spaceBelow
         return ghostTiles
     }
 
@@ -490,6 +571,7 @@ export class Piece {
     }
 
     hardDrop() {
+        if(this.ghostOffset == 0) return
         this.empty()
         this.offset[0] += this.ghostOffset
         let ghostTiles = this.getGhostTiles()
