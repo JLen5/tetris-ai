@@ -93,6 +93,7 @@ export class Config {
         'hard-drop': ' ',
         'hold': 'c'
     }
+    static allowHold = true
     static repeatKeyDelay = 8
     static repeatKeySpeed = 2 // smaller = faster; = to # of frames btwn repeats
     // game config

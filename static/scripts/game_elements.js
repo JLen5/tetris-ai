@@ -14,13 +14,14 @@ export class Game {
         this.heldPiece = null
         this.queue = this.#fullQueue(Config.lookAheadCount)
 
-        this.fallInterval = 0.5 * Config.FPS // seconds * FPS = frames; seconds to wait before applying gravity
+        this.fallInterval = 0.9 * Config.FPS // seconds * FPS = frames; seconds to wait before applying gravity
         this.fallCounter = 0
 
         this.lastTime = Date.now();
         this.timeElapsed = 0
         
-        this.level = 1
+        this.startLevel = 18
+        this.level = this.startLevel
         this.score = 0
         this.linesCleared = 0
 
@@ -55,11 +56,12 @@ export class Game {
         this.currentPiece.draw()  // draw current piece
         this.fallCounter += 1
         // if fallCounter satisfies interval, fall 1 tile
-        if (this.fallCounter > this.fallInterval) {
+        if (this.fallCounter > Math.max(3, this.fallInterval - 3*(this.level-1))) {  // fall speed caps out at level 18
             if (this.canMoveDown()) {
                 this.currentPiece.fall()
             } else {
                 this.linesCleared += this.clearLines()
+                this.level = Math.floor(this.linesCleared / 10) + this.startLevel
                 this.newPiece()
                 this.canHold = true
             }  
@@ -106,12 +108,13 @@ export class Game {
             keyboard.disableHold(Config.keys['hard-drop'])
             this.score += this.currentPiece.hardDrop()
             this.linesCleared += this.clearLines()
+            this.level = Math.floor(this.linesCleared / 10) + this.startLevel
             this.newPiece()
             this.canHold = true
             this.fallCounter = 0
         }
 
-        if(keyboard.isPressed(Config.keys['hold']) && keyboard.isActive(Config.keys['hold'])) {
+        if(Config.allowHold && keyboard.isPressed(Config.keys['hold']) && keyboard.isActive(Config.keys['hold'])) {
             keyboard.disableHold(Config.keys['hold'])
             if(!this.canHold) return
             this.canHold = false
