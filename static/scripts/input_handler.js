@@ -5,7 +5,7 @@ export default class InputHandler {
         addEventListener('keydown', (e) => {
             let k = e.key.toLowerCase()
             if (this.isPressed(k)) return
-            this.keys[k] = 0
+            this.keys[k] = {'ticks': 0}
         })
 
         addEventListener('keyup', (e) => {
@@ -17,8 +17,12 @@ export default class InputHandler {
      */
     tick() {
         Object.keys(this.keys).forEach(k => {  // subtract 1 from cooldown counter
-            if (this.keys[k] < 0) return 
-            this.keys[k] -= 1
+            if (this.keys[k]['ticks'] < 0) return 
+            if(this.keys[k]['delay'] !== null && this.keys[k]['delay'] > 0) {
+                this.keys[k]['delay'] -= 1
+                return
+            }
+            this.keys[k]['ticks'] -= 1
         })
     }
 
@@ -37,7 +41,7 @@ export default class InputHandler {
      * @returns {boolean} is `k`'s cooldown done (==0)?
      */
     isActive(k) {
-        return this.keys[k] == 0
+        return this.keys[k]['ticks'] == 0
     }
 
     /**
@@ -46,8 +50,12 @@ export default class InputHandler {
      * @param {String} k - keyboard key
      * @param {number} ticks 
      */
-    setHoldCooldown(k, ticks) {
-        this.keys[k] = ticks
+    setHoldCooldown(k, ticks, delay=0) {
+        this.keys[k]['ticks'] = ticks
+        if(this.keys[k]['delay'] == null && delay) {
+            this.keys[k]['delay'] = delay
+        }
+
     }
 
     /**
@@ -56,6 +64,6 @@ export default class InputHandler {
      * @param {String} k - keyboard key
      */
     disableHold(k) {
-        this.keys[k] = -1
+        this.keys[k]['ticks'] = -1
     }
 }

@@ -20,12 +20,14 @@ export class Game {
         this.lastTime = Date.now();
         this.timeElapsed = 0
         
-        this.level = 0
-        this.points = 0
+        this.level = 1
+        this.score = 0
+        this.linesCleared = 0
 
         this.canHold = true
         this.refreshLookahead = true
         this.refreshHoldDisplay = true
+        this.refreshPointsDisplay = true
     }
 
     /**
@@ -54,12 +56,12 @@ export class Game {
         if (this.fallCounter > this.fallInterval) {
             if (this.canMoveDown()) {
                 this.currentPiece.fall()
-                this.fallCounter = 0
             } else {
-                this.clearLines()
+                this.linesCleared += this.clearLines()
                 this.newPiece()
                 this.canHold = true
-            }            
+            }  
+            this.fallCounter = 0          
         }
         this.grid.draw(ctx)
     }
@@ -71,12 +73,12 @@ export class Game {
         // if key is pressed and has no cooldown, do action
         // left/right
         if (keyboard.isPressed(Config.keys['left']) && keyboard.isActive(Config.keys['left'])) {
-            keyboard.setHoldCooldown(Config.keys['left'], 60)
+            keyboard.setHoldCooldown(Config.keys['left'], Config.repeatKeySpeed, Config.repeatKeyDelay)
             if(!this.canMoveLeft()) return
             this.currentPiece.shift(0, -1)
         }
         if (keyboard.isPressed(Config.keys['right']) && keyboard.isActive(Config.keys['right'])) {
-            keyboard.setHoldCooldown(Config.keys['right'], 60)
+            keyboard.setHoldCooldown(Config.keys['right'], Config.repeatKeySpeed, Config.repeatKeyDelay)
             if(!this.canMoveRight()) return
             this.currentPiece.shift(0, 1)
         }
@@ -91,7 +93,7 @@ export class Game {
         }
         // soft drop
         if (keyboard.isPressed(Config.keys['soft-drop']) && keyboard.isActive(Config.keys['soft-drop'])) {
-            keyboard.setHoldCooldown(Config.keys['soft-drop'], 30)
+            keyboard.setHoldCooldown(Config.keys['soft-drop'], Config.repeatKeySpeed, Config.repeatKeyDelay)
             if(!this.canMoveDown()) return
             this.currentPiece.fall()
             this.fallCounter = 0
@@ -100,7 +102,10 @@ export class Game {
         if (keyboard.isPressed(Config.keys['hard-drop']) && keyboard.isActive(Config.keys['hard-drop'])) {
             keyboard.disableHold(Config.keys['hard-drop'])
             this.currentPiece.hardDrop()
-            this.fallCounter = this.fallInterval+1
+            this.linesCleared += this.clearLines()
+            this.newPiece()
+            this.canHold = true
+            this.fallCounter = 0
         }
 
         if(keyboard.isPressed(Config.keys['hold']) && keyboard.isActive(Config.keys['hold'])) {
@@ -203,6 +208,16 @@ export class Game {
             this.holdDisplay.fillTile(v[0], v[1], Constants.colours[this.heldPiece.id])
         })
         this.holdDisplay.draw(ctx)
+    }
+
+    updateScoreDisplay(display) {
+        display.innerText = this.score
+    }
+    updateLevelDisplay(display) {
+        display.innerText = this.level
+    }
+    updateLinesDisplay(display) {
+        display.innerText = this.linesCleared
     }
 }
 
@@ -402,6 +417,8 @@ export class Piece {
         this.empty()
         this.emptyGhost()
         this.offset = addVectors(this.offset, [r, c])
+        this.draw()
+        this.drawGhost()
     }
 
     fall() {
@@ -551,6 +568,7 @@ export class Piece {
         ghostTiles.forEach(tile => {
             this.grid.fillTile(tile[0], tile[1], Constants.colours['ghost'])
         })
+        this.ghost = ghostTiles
     }
 
     emptyGhost() {
@@ -574,8 +592,9 @@ export class Piece {
         if(this.ghostOffset == 0) return
         this.empty()
         this.offset[0] += this.ghostOffset
-        let ghostTiles = this.getGhostTiles()
-        ghostTiles.forEach(tile => {
+        console.log(this.ghost)
+        this.ghost.forEach(tile => {
+            console.log('hi')
             this.grid.fillTile(tile[0], tile[1], this.colour)
         })
         this.ghostOffset = 0

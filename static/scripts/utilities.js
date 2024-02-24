@@ -83,7 +83,7 @@ export class Constants {
 }
 
 export class Config {
-    static FPS = 60
+    // player config
     static keys = {
         'left': 'j',
         'right': 'l',
@@ -93,7 +93,12 @@ export class Config {
         'hard-drop': ' ',
         'hold': 'c'
     }
+    static repeatKeyDelay = 8
+    static repeatKeySpeed = 2 // smaller = faster; = to # of frames btwn repeats
+    // game config
+    static FPS = 60
     static lookAheadCount = 5
+
 }
 
 export function addVectors(v1, v2) {
@@ -101,7 +106,5 @@ export function addVectors(v1, v2) {
 }
 
 export function getColumn(arr, idx) {
-    console.log(arr)
-    console.log(idx)
     return arr.map(x => x[idx])
 }

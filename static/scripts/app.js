@@ -16,6 +16,10 @@ const ctxLookahead = canvasLookahead.getContext('2d')
 const canvasHold = document.querySelector('canvas#hold')
 const ctxHold = canvasHold.getContext('2d')
 
+const scoreDisplay = document.querySelector('span#score')
+const levelDisplay = document.querySelector('span#level')
+const linesDisplay = document.querySelector('span#lines')
+
 const tileW = 24
 const grid = new Grid(10, 20, tileW, Constants.colours['gridline'])
 const lookahead = new Grid(4, 14, tileW)
@@ -30,6 +34,9 @@ canvasMain.height = grid.gridH*grid.tileW
 canvasLookahead.width = grid.tileW*4
 canvasLookahead.height = grid.tileW*14
 
+canvasHold.width = grid.tileW*4
+canvasHold.height = grid.tileW*2
+
 // game loop
 function gameLoop() {
     if(game.tick()) {
@@ -40,8 +47,12 @@ function gameLoop() {
         game.update(ctxMain)
         game.updateLookahead(ctxLookahead)
         game.updateHoldDisplay(ctxHold)
+        game.updateScoreDisplay(scoreDisplay)
+        game.updateLevelDisplay(levelDisplay)
+        game.updateLinesDisplay(linesDisplay)
         lookahead.draw(ctxLookahead)
         holdDisplay.draw(ctxHold)
+        
 
         // grid.draw(ctxMain)
     }
