@@ -28,6 +28,8 @@ export class Game {
         this.refreshLookahead = true
         this.refreshHoldDisplay = true
         this.refreshPointsDisplay = true
+
+        this.scoreCalc = new ScoreCalculator()
     }
 
     /**
@@ -96,12 +98,13 @@ export class Game {
             keyboard.setHoldCooldown(Config.keys['soft-drop'], Config.repeatKeySpeed, Config.repeatKeyDelay)
             if(!this.canMoveDown()) return
             this.currentPiece.fall()
+            this.score += 1
             this.fallCounter = 0
         }
         // hard drop
         if (keyboard.isPressed(Config.keys['hard-drop']) && keyboard.isActive(Config.keys['hard-drop'])) {
             keyboard.disableHold(Config.keys['hard-drop'])
-            this.currentPiece.hardDrop()
+            this.score += this.currentPiece.hardDrop()
             this.linesCleared += this.clearLines()
             this.newPiece()
             this.canHold = true
@@ -151,6 +154,7 @@ export class Game {
             linesCleared ++
             this.grid.clearRow(row)
         })
+        this.score += this.scoreCalc.score(linesCleared, this.level)
         return linesCleared
     }
 
@@ -588,12 +592,31 @@ export class Piece {
     }
 
     hardDrop() {
-        if(this.ghostOffset == 0) return
+        if(this.ghostOffset == 0) return 0
         this.empty()
         this.offset[0] += this.ghostOffset
+        let score = this.ghostOffset * 2
         this.ghost.forEach(tile => {
             this.grid.fillTile(tile[0], tile[1], this.colour)
         })
         this.ghostOffset = 0
+        return score
+    }
+}
+
+export class ScoreCalculator {
+    // based on NES tetris
+    constructor() {
+        this.multiplierByLines = {
+            1: 40,
+            2: 100,
+            3: 300,
+            4: 1200
+        }
+    }
+
+    score(lines, level) {
+        if(lines == 0) return 0
+        return this.multiplierByLines[lines]*(level+1)
     }
 }
