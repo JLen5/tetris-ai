@@ -175,7 +175,6 @@ export class Game {
 
     updateLookahead(ctx) {
         if(!this.refreshLookahead) return
-        console.log('update')
         this.refreshLookahead = false
         let offset = [1, 1]
         this.lookahead.resetGrid()
@@ -592,9 +591,7 @@ export class Piece {
         if(this.ghostOffset == 0) return
         this.empty()
         this.offset[0] += this.ghostOffset
-        console.log(this.ghost)
         this.ghost.forEach(tile => {
-            console.log('hi')
             this.grid.fillTile(tile[0], tile[1], this.colour)
         })
         this.ghostOffset = 0
