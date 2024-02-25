@@ -20,7 +20,7 @@ export class Game {
         this.lastTime = Date.now();
         this.timeElapsed = 0
         
-        this.startLevel = 18
+        this.startLevel = 1
         this.level = this.startLevel
         this.score = 0
         this.linesCleared = 0
@@ -134,7 +134,38 @@ export class Game {
     }
 
     newPiece() {
+        let tiles = this.currentPiece.getTiles()
+        let tile;
+        for(let i=0;i<tiles.length;i++) {
+            tile = tiles[i]
+            if(tile[0] == 0) {
+                return this.gameOver()
+            }
+        }
         this.currentPiece = this.editQueue()
+        tiles = this.currentPiece.getTiles()
+        let flag = false
+        for(let i=0;i<tiles.length;i++) {
+            tile = tiles[i]
+            if(this.grid.tileIsOccupied(tile[0], tile[1])) {
+                flag = true
+                break
+            }
+        }
+        if(flag) return this.gameOver()
+        // if(!flag) return
+        // let offsetAsStr = this.currentPiece.offset.join(',')
+        // if(offsetAsStr == [1, 4].join(',')) return this.gameOver()
+        // for(let i=0;i<tiles.length;i++) {
+        //     tile = tiles[i]
+        //     if(this.grid.tileIsOccupied(tile[0]+1, tile[1]+1)) {
+        //         flag = true
+        //         break
+        //     }
+        // }
+        // if(flag) return this.gameOver()
+        // Piece.startOffset = [1, 4]
+        // this.currentPiece.offset = [1, 4]
     }
 
     canMoveLeft() {
@@ -225,6 +256,10 @@ export class Game {
     updateLinesDisplay(display) {
         display.innerText = this.linesCleared
     }
+    
+    gameOver() {
+        console.log('you suck')
+    }
 }
 
 export class Grid {
@@ -234,11 +269,12 @@ export class Grid {
      * @param {number} gridH - # of tiles, height-wise
      * @param {number} tileW - width of 1 tile in grid
      */
-    constructor (gridW, gridH, tileW, lineColour) {
+    constructor (gridW, gridH, tileW, lineColour, tilesAbove=0) {
         this.gridW = gridW
         this.gridH = gridH
         this.tileW = tileW
         this.lineColour = lineColour
+        this.tilesAbove = tilesAbove
         this.tileData = this.#buildGrid()
     }
 
@@ -272,7 +308,7 @@ export class Grid {
         ctx.beginPath()
         let tile = this.tileData[r][c]
         ctx.fillStyle = tile.toHex()
-        ctx.fillRect(c*this.tileW, r*this.tileW, this.tileW, this.tileW)
+        ctx.fillRect((c)*this.tileW, (r-this.tilesAbove)*this.tileW, this.tileW, this.tileW)
     }
 
     drawGrid(ctx) {
@@ -379,12 +415,13 @@ export class Piece {
      * @param {String} id - has value 'j', 'l', 't', 's', 'z', 'i' or 'o'
      */
 
+    static startOffset = [1, 4]
     constructor (grid, id) {
         this.grid = grid
         this.id = id
         this.shape = Constants.shapes[id]
         this.colour = Constants.colours[id]
-        this.offset = [1, 4]
+        this.offset = structuredClone(Piece.startOffset)
         this.spacing;
         this.ghost = []
         this.ghostOffset = 0
@@ -405,7 +442,7 @@ export class Piece {
     }
 
     reset() {
-        this.offset = [1, 4]
+        this.offset = structuredClone(Piece.startOffset)
         this.shape = Constants.shapes[this.id]
         this.ghost = []
         this.ghostOffset = 0

@@ -21,7 +21,7 @@ const levelDisplay = document.querySelector('span#level')
 const linesDisplay = document.querySelector('span#lines')
 
 const tileW = 24
-const grid = new Grid(10, 20, tileW, Constants.colours['gridline'])
+const grid = new Grid(10, 20, tileW, Constants.colours['gridline'], 2)
 const lookahead = new Grid(4, 14, tileW)
 const holdDisplay = new Grid(4, 2, tileW)
 
@@ -29,7 +29,7 @@ const game = new Game(grid, lookahead, holdDisplay)
 const inputs = new InputHandler()
 
 canvasMain.width = grid.gridW*grid.tileW
-canvasMain.height = grid.gridH*grid.tileW
+canvasMain.height = (grid.gridH-grid.tilesAbove)*grid.tileW
 
 canvasLookahead.width = grid.tileW*4
 canvasLookahead.height = grid.tileW*14
