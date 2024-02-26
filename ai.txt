@@ -1,0 +1,13 @@
+POSSIBLE ACTIONS
+failed
+left
+right
+cw
+ccw
+hardDrop
+hold
+single
+double
+triple
+tetris
+suck

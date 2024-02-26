@@ -31,6 +31,28 @@ export class Game {
         this.refreshPointsDisplay = true
 
         this.scoreCalc = new ScoreCalculator()
+        this.play = true
+
+        this.action = ''
+    }
+
+    computeReward() {
+        switch (this.action) {
+            case 'failed':
+                return -5
+            case 'single':
+                return 40
+            case 'double':
+                return 100
+            case 'triple':
+                return 300
+            case 'tetris':
+                return 1200
+            case 'suck':
+                return -2000
+            default:
+                return 1
+        }
     }
 
     /**
@@ -78,22 +100,30 @@ export class Game {
         // left/right
         if (keyboard.isPressed(Config.keys['left']) && keyboard.isActive(Config.keys['left'])) {
             keyboard.setHoldCooldown(Config.keys['left'], Config.repeatKeySpeed, Config.repeatKeyDelay)
+            this.action = 'failed'
             if(!this.canMoveLeft()) return
+            this.action = 'left'
             this.currentPiece.shift(0, -1)
         }
         if (keyboard.isPressed(Config.keys['right']) && keyboard.isActive(Config.keys['right'])) {
             keyboard.setHoldCooldown(Config.keys['right'], Config.repeatKeySpeed, Config.repeatKeyDelay)
+            this.action = 'failed'
             if(!this.canMoveRight()) return
+            this.action = 'right'
             this.currentPiece.shift(0, 1)
         }
         // rotations
         if (keyboard.isPressed(Config.keys['rot-cw']) && keyboard.isActive(Config.keys['rot-cw'])) {
             keyboard.disableHold(Config.keys['rot-cw'])
-            this.currentPiece.rotate(true)
+            this.action = 'failed'
+            if(!this.currentPiece.rotate(true)) return
+            this.action = 'cw'
         }
         if (keyboard.isPressed(Config.keys['rot-ccw']) && keyboard.isActive(Config.keys['rot-ccw'])) {
             keyboard.disableHold(Config.keys['rot-ccw'])
-            this.currentPiece.rotate(false)
+            this.action = 'failed'
+            if (!this.currentPiece.rotate(false)) return
+            this.action = 'ccw'
         }
         // soft drop
         if (keyboard.isPressed(Config.keys['soft-drop']) && keyboard.isActive(Config.keys['soft-drop'])) {
@@ -106,19 +136,17 @@ export class Game {
         // hard drop
         if (keyboard.isPressed(Config.keys['hard-drop']) && keyboard.isActive(Config.keys['hard-drop'])) {
             keyboard.disableHold(Config.keys['hard-drop'])
-            this.score += this.currentPiece.hardDrop()
-            this.linesCleared += this.clearLines()
-            this.level = Math.floor(this.linesCleared / 10) + this.startLevel
-            this.newPiece()
-            this.canHold = true
-            this.fallCounter = 0
+            this.hardDrop()
+            this.action = 'hardDrop'
         }
 
         if(Config.allowHold && keyboard.isPressed(Config.keys['hold']) && keyboard.isActive(Config.keys['hold'])) {
             keyboard.disableHold(Config.keys['hold'])
+            this.action = 'failed'
             if(!this.canHold) return
             this.canHold = false
             this.hold()
+            this.action = 'hold'
         }
         keyboard.tick()
     }
@@ -182,12 +210,14 @@ export class Game {
 
     clearLines() {
         let checkRows = this.currentPiece.getOccupiedRows().sort()
+        let actions = ['hardDrop', 'single', 'double', 'triple', 'tetris']
         let linesCleared = 0
         checkRows.forEach(row => {
             if(!this.grid.rowIsFull(row)) return
             linesCleared ++
             this.grid.clearRow(row)
         })
+        this.action = actions[linesCleared]
         this.score += this.scoreCalc.score(linesCleared, this.level)
         return linesCleared
     }
@@ -256,8 +286,19 @@ export class Game {
     updateLinesDisplay(display) {
         display.innerText = this.linesCleared
     }
+
+    hardDrop() {
+        this.score += this.currentPiece.hardDrop()
+        this.linesCleared += this.clearLines()
+        this.level = Math.floor(this.linesCleared / 10) + this.startLevel
+        this.newPiece()
+        this.canHold = true
+        this.fallCounter = 0
+    }
     
     gameOver() {
+        this.play = false
+        this.action = 'suck'
         console.log('you suck')
     }
 }
@@ -276,6 +317,21 @@ export class Grid {
         this.lineColour = lineColour
         this.tilesAbove = tilesAbove
         this.tileData = this.#buildGrid()
+    }
+
+    getState() {
+        let newRow;
+        return this.tileData.map(row => {
+            newRow = []
+            row.forEach(td => {
+                if(this.tileIsOccupied(td)) {
+                    newRow.push(1)
+                } else {
+                    newRow.push(0)
+                }
+            })
+            return newRow
+        })
     }
 
     #buildGrid() {
@@ -474,9 +530,11 @@ export class Piece {
         this.emptyGhost()
 
         let shape = this.getRotatedArray(cw)
-        if (this.adjustRotate(shape)) {
+        if (this.rotationIsValid(shape)) {
             this.shape = shape
+            return true
         }
+        return false
     }
 
     getRotatedArray(cw=true) {
@@ -504,7 +562,7 @@ export class Piece {
         return shape
     }
 
-    adjustRotate(s) {
+    rotationIsValid(s) {
         let rotatedShape = structuredClone(s)
         let offset = structuredClone(this.offset)
         for(let i=0;i<rotatedShape.length;i++) {
@@ -523,7 +581,7 @@ export class Piece {
             let tile = addVectors(rotatedShape[i], offset)
             let tileData = this.grid.getTileData(tile[0], tile[1])
             if(tile == null || this.grid.tileIsOccupied(tileData)) return false
-        }
+        }                    
         this.offset = offset
         return true
     }

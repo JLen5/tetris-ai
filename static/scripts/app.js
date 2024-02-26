@@ -5,7 +5,7 @@ import {
 
 import InputHandler from './input_handler.js'
 import { Constants } from './utilities.js'
-
+import { Model } from './ai_utilities.js'
 
 const canvasMain = document.querySelector('canvas#game')
 const ctxMain = canvasMain.getContext('2d')
@@ -28,6 +28,13 @@ const holdDisplay = new Grid(4, 2, tileW)
 const game = new Game(grid, lookahead, holdDisplay)
 const inputs = new InputHandler()
 
+// AI STUF
+const batchSize = 50
+const model = new Model(1, 1, 6, batchSize)
+const maxStepsPerGame = 90
+const maxEpsilon = 0.2 // exploration parameter
+//
+
 canvasMain.width = grid.gridW*grid.tileW
 canvasMain.height = (grid.gridH-grid.tilesAbove)*grid.tileW
 
@@ -39,12 +46,13 @@ canvasHold.height = grid.tileW*2
 
 // game loop
 function gameLoop() {
-    if(game.tick()) {
+    if(game.tick() && game.play) {
         ctxMain.clearRect(0, 0, canvasMain.width, canvasMain.height) // clear canvas
         ctxLookahead.clearRect(0, 0, canvasLookahead.width, canvasLookahead.height) // clear canvas
         
         game.handleKeys(inputs)
         game.update(ctxMain)
+        
         game.updateLookahead(ctxLookahead)
         game.updateHoldDisplay(ctxHold)
         game.updateScoreDisplay(scoreDisplay)
@@ -52,12 +60,20 @@ function gameLoop() {
         game.updateLinesDisplay(linesDisplay)
         lookahead.draw(ctxLookahead)
         holdDisplay.draw(ctxHold)
-        
-
-        // grid.draw(ctxMain)
     }
     requestAnimationFrame(gameLoop)
 }
 
+function run() {
+    let state = grid.getState()
+    let totalReward = 0
+    let step = 0
+
+    while (step < maxStepsPerGame) {
+        const action = model.chooseAction(state, maxEpsilon)
+        const reward = computeReward
+    }
+
+}
 
 gameLoop()
