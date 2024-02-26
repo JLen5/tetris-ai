@@ -151,6 +151,10 @@ export class Game {
         keyboard.tick()
     }
 
+    getTPiece() {
+        return new Piece(this.grid, 't')
+    }
+
     getRandomPiece() {
         // reset bag
         if (this.bag.length === 0) {
@@ -342,6 +346,24 @@ export class Grid {
         return tileData
     }
 
+    loadTSpinMap() {
+        let tileData = []
+        let row, newRow = [];
+        for(let i=0;i<Constants.testTSpinMap.length;i++) {
+            row = Constants.testTSpinMap[i]
+            newRow = []
+            row.forEach(t => {
+                if(t == 0) {
+                    newRow.push(Constants.colours['x'])
+                } else {
+                    newRow.push(Constants.colours['grey'])
+                }
+            })
+            tileData.push(newRow)
+        }
+        this.tileData = tileData
+    }
+
     resetGrid() {
         this.tileData = this.#buildGrid()
     }
@@ -481,6 +503,7 @@ export class Piece {
         this.spacing;
         this.ghost = []
         this.ghostOffset = 0
+        this.rotationState = 0
     }
 
     draw () {
@@ -530,8 +553,14 @@ export class Piece {
         this.emptyGhost()
 
         let shape = this.getRotatedArray(cw)
-        if (this.rotationIsValid(shape)) {
+        if (this.adjustRotate(shape, cw)) {
             this.shape = shape
+            this.rotationState += cw ? 1 : -1
+            if(this.rotationState == -1) {
+                this.rotationState = 3
+            } else if(this.rotationState == 4) {
+                this.rotationState = 0
+            }
             return true
         }
         return false
@@ -562,28 +591,101 @@ export class Piece {
         return shape
     }
 
-    rotationIsValid(s) {
+    // rotationIsValid(s) {
+    //     let rotatedShape = structuredClone(s)
+    //     let offset = structuredClone(this.offset)
+    //     for(let i=0;i<rotatedShape.length;i++) {
+    //         let tilePos = addVectors(rotatedShape[i], offset)
+    //         // check if tile out of bounds after rotating
+    //         if(tilePos[1] < 0) {
+    //             offset[1] += 1
+    //         } else if(tilePos[1] > this.grid.gridW-1) {
+    //             offset[1] -= 1
+    //         } else if (tilePos[0] > this.grid.gridH-1) {
+    //             offset[0] -= 1
+    //         }
+    //     }
+    //     // check if new rotation overlaps existing blocks; if it does, cancel rotation
+    //     for(let i=0;i<rotatedShape.length;i++) {
+    //         let tile = addVectors(rotatedShape[i], offset)
+    //         let tileData = this.grid.getTileData(tile[0], tile[1])
+    //         if(tile == null || this.grid.tileIsOccupied(tileData)) return false
+    //     }                    
+    //     this.offset = offset
+    //     return true
+    // }
+
+    adjustRotate(s, cw) {
         let rotatedShape = structuredClone(s)
         let offset = structuredClone(this.offset)
-        for(let i=0;i<rotatedShape.length;i++) {
-            let tilePos = addVectors(rotatedShape[i], offset)
-            // check if tile out of bounds after rotating
-            if(tilePos[1] < 0) {
-                offset[1] += 1
-            } else if(tilePos[1] > this.grid.gridW-1) {
-                offset[1] -= 1
-            } else if (tilePos[0] > this.grid.gridH-1) {
-                offset[0] -= 1
+        let rotationCheck, rotationOffset;
+
+        let state = this.rotationState
+        if(!cw) {
+            state -= 1
+            if(state == -1) {
+                state = 3
             }
         }
-        // check if new rotation overlaps existing blocks; if it does, cancel rotation
-        for(let i=0;i<rotatedShape.length;i++) {
-            let tile = addVectors(rotatedShape[i], offset)
-            let tileData = this.grid.getTileData(tile[0], tile[1])
-            if(tile == null || this.grid.tileIsOccupied(tileData)) return false
-        }                    
-        this.offset = offset
+        if(this.id == 'i') {
+            rotationCheck = structuredClone(Constants.wallKickData_IPiece[state])
+        } else {
+            rotationCheck = structuredClone(Constants.wallKickData[state])
+        }
+        // console.log(rotationCheck)
+        console.log(this.rotationState)
+        rotationCheck.splice(0, 0, [0, 0]) // to check normal rotation
+        
+        let rotationInvalid = false
+        let tile;
+        for(let j=0;j<rotationCheck.length;j++) {  // go through each rotation check
+            rotationInvalid = false;
+            rotationOffset = rotationCheck[j]
+            if(!cw) {
+                rotationOffset.map(v => {
+                    return -v
+                })
+            }
+            console.log("rotationOffset", rotationOffset)
+            for (let i=0;i<rotatedShape.length;i++) {  // check each tile
+                tile = addVectors(addVectors(rotatedShape[i], offset), rotationOffset)
+                // console.log("tile", tile)
+                // if not null and not occupied
+                // console.log("a", this.grid.getTileData(tile[0], tile[1]) == null)
+                // if(this.grid.getTileData(tile[0], tile[1]) != null) console.log("b", this.grid.tileIsOccupied(tile[0], tile[1]))
+                // console.log("c", !this.grid.tileInPiece(tile[0], tile[1], this))
+                if(this.grid.getTileData(tile[0], tile[1]) == null || (this.grid.tileIsOccupied(tile[0], tile[1]))) {
+                    rotationInvalid = true
+                    break
+                }
+            }
+            if(!rotationInvalid) break // if detected valid, stop checking new rotation offsets
+        }
+        // if no detected valid rotation offsets, return false
+        if(rotationInvalid) return false
+        this.offset = addVectors(offset, rotationOffset)  // adjust valid offset
         return true
+        // if grid.getTileData == null (out of bounds) || grid.tileIsOccupied
+    
+        // for(let i=0;i<rotatedShape.length;i++) {
+        //     let tilePos = addVectors(rotatedShape[i], offset)
+        //     // check if tile out of bounds after rotating
+        //     if(tilePos[1] < 0) {
+        //         offset[1] += 1
+        //     } else if(tilePos[1] > this.grid.gridW-1) {
+        //         offset[1] -= 1
+        //     } else if (tilePos[0] > this.grid.gridH-1) {
+        //         offset[0] -= 1
+        //     }
+        // }
+        // check if new rotation overlaps existing blocks; if it does, cancel rotation
+        // for(let i=0;i<rotatedShape.length;i++) {
+        //     let tile = addVectors(rotatedShape[i], offset)
+        //     let tileData = this.grid.getTileData(tile[0], tile[1])
+        //     if(tile == null || this.grid.tileIsOccupied(tileData)) return false
+        // }
+        // this.offset = offset
+        // return true
     }
 
     getBottomPieceTiles() {

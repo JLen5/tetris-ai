@@ -44,8 +44,14 @@ canvasLookahead.height = grid.tileW*14
 canvasHold.width = grid.tileW*4
 canvasHold.height = grid.tileW*2
 
+
+// LOAD T-SPIN TESTING
+game.grid.loadTSpinMap()
+game.currentPiece = game.getTPiece()
+
 // game loop
 function gameLoop() {
+    
     if(game.tick() && game.play) {
         ctxMain.clearRect(0, 0, canvasMain.width, canvasMain.height) // clear canvas
         ctxLookahead.clearRect(0, 0, canvasLookahead.width, canvasLookahead.height) // clear canvas
