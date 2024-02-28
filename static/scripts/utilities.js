@@ -97,16 +97,16 @@ export class Constants {
 
     static wallKickData_IPiece = {  // for CW ; if CCW, multiply each value by -1, decrease key by 1 (i.e. wallKickData[1] for CW --> -1 * wallKickData[0] for CCW)
         0: [
-            [0, 2], [0, -1], [-1, 2], [2, -1]
+            [0, -2], [0, -1], [1, -2], [-2, 1]
         ], 
         1: [
-            [0, 1], [0, 2], [2, 1], [-1, -2]
+            [0, -1], [0, -2], [-2, -1], [1, 2]
         ], 
         2: [
-            [0, -2], [0, 1], [1, -2], [-2, 1]
+            [0, 2], [0, -1], [-1, 2], [2, -1]
         ],
         3: [
-            [0, -1], [0, 2], [-2, -1], [1, 2]
+            [0, 1], [0, -2], [2, 1], [-1, -2]
         ]
     }
 

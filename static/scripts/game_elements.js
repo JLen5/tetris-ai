@@ -649,11 +649,7 @@ export class Piece {
             console.log("rotationOffset", rotationOffset)
             for (let i=0;i<rotatedShape.length;i++) {  // check each tile
                 tile = addVectors(addVectors(rotatedShape[i], offset), rotationOffset)
-                // console.log("tile", tile)
-                // if not null and not occupied
-                // console.log("a", this.grid.getTileData(tile[0], tile[1]) == null)
-                // if(this.grid.getTileData(tile[0], tile[1]) != null) console.log("b", this.grid.tileIsOccupied(tile[0], tile[1]))
-                // console.log("c", !this.grid.tileInPiece(tile[0], tile[1], this))
+                
                 if(this.grid.getTileData(tile[0], tile[1]) == null || (this.grid.tileIsOccupied(tile[0], tile[1]))) {
                     rotationInvalid = true
                     break
@@ -665,27 +661,6 @@ export class Piece {
         if(rotationInvalid) return false
         this.offset = addVectors(offset, rotationOffset)  // adjust valid offset
         return true
-        // if grid.getTileData == null (out of bounds) || grid.tileIsOccupied
-    
-        // for(let i=0;i<rotatedShape.length;i++) {
-        //     let tilePos = addVectors(rotatedShape[i], offset)
-        //     // check if tile out of bounds after rotating
-        //     if(tilePos[1] < 0) {
-        //         offset[1] += 1
-        //     } else if(tilePos[1] > this.grid.gridW-1) {
-        //         offset[1] -= 1
-        //     } else if (tilePos[0] > this.grid.gridH-1) {
-        //         offset[0] -= 1
-        //     }
-        // }
-        // check if new rotation overlaps existing blocks; if it does, cancel rotation
-        // for(let i=0;i<rotatedShape.length;i++) {
-        //     let tile = addVectors(rotatedShape[i], offset)
-        //     let tileData = this.grid.getTileData(tile[0], tile[1])
-        //     if(tile == null || this.grid.tileIsOccupied(tileData)) return false
-        // }
-        // this.offset = offset
-        // return true
     }
 
     getBottomPieceTiles() {
