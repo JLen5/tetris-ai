@@ -642,9 +642,9 @@ export class Piece {
             rotationInvalid = false;
             rotationOffset = rotationCheck[j]
             if(!cw) {
-                rotationOffset.map(v => {
-                    return -v
-                })
+                rotationOffset = rotationOffset.map(v => 
+                    -1*v
+                )
             }
             console.log("rotationOffset", rotationOffset)
             for (let i=0;i<rotatedShape.length;i++) {  // check each tile
